@@ -9,21 +9,14 @@
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
         #map { width: 100%; height: 100vh; position: relative; z-index: 1; }
         
-        /* 검색바 레이아웃 수정: 화면 너비에 맞게 최적화 */
         #search-container {
             position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-            width: 92%; max-width: 450px; z-index: 99999;
+            width: 94%; max-width: 420px; z-index: 99999;
             display: flex; background: white; padding: 4px; border-radius: 25px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.25); align-items: center;
         }
-        #search-input { 
-            flex: 1; border: none; padding: 8px 12px; font-size: 15px; 
-            outline: none; min-width: 0; /* 폭 좁아질 때 대비 */
-        }
-        .btn { 
-            border: none; padding: 8px 12px; font-weight: bold; cursor: pointer; 
-            font-size: 13px; flex-shrink: 0; /* 버튼 크기 고정 */
-        }
+        #search-input { flex: 1; border: none; padding: 8px 12px; font-size: 15px; outline: none; min-width: 0; }
+        .btn { border: none; padding: 8px 10px; font-weight: bold; cursor: pointer; font-size: 13px; flex-shrink: 0; }
         #search-btn { background-color: #28a745; color: white; border-radius: 20px 0 0 20px; margin-left: 5px; }
         #reset-btn { background-color: #6c757d; color: white; border-radius: 0 20px 20px 0; border-left: 1px solid #fff; }
 
@@ -33,20 +26,20 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer;
             display: flex; align-items: center; justify-content: center; border: 2px solid #007bff;
         }
-        .custom-marker { background: #28a745; color: white; padding: 4px 8px; border-radius: 15px; font-size: 11px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; }
+        .custom-marker { background: #28a745; color: white; padding: 4px 8px; border-radius: 15px; font-size: 11px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; cursor: pointer; }
         .my-location-marker { width: 18px; height: 18px; background: #007bff; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 8px rgba(0,0,0,0.3); }
         .info-window { padding: 15px; width: 260px; background: #ffffff !important; border: 2px solid #28a745; border-radius: 12px; line-height: 1.6; font-size: 14px; position: relative; }
-        .info-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; border-bottom: 2px solid #28a745; padding-bottom: 5px; }
-        .contact-item { margin: 5px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; }
-        .tel-link { color: #007bff; text-decoration: none; font-weight: bold; }
-        .addr-text { display: block; margin-top: 8px; padding: 6px; background: #f4f4f4; border-radius: 4px; font-size: 12px; cursor: pointer; border-left: 3px solid #28a745; }
-        .navi-btn { background: #03C75A; color: white; width: 100%; border: none; padding: 10px; margin-top: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; text-align: center; }
+        .info-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; border-bottom: 2px solid #28a745; padding-bottom: 5px; color: #000; }
+        .contact-item { margin: 5px 0; display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; align-items: center; }
+        .tel-link { color: #007bff; text-decoration: none; font-weight: bold; font-size: 15px; }
+        .addr-text { display: block; margin-top: 8px; padding: 8px; background: #f4f4f4; border-radius: 4px; font-size: 12px; cursor: pointer; border-left: 3px solid #28a745; line-height: 1.4; word-break: break-all; }
+        .navi-btn { background: #03C75A; color: white; width: 100%; border: none; padding: 12px; margin-top: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; text-align: center; }
     </style>
 </head>
 <body>
 
 <div id="search-container">
-    <input type="text" id="search-input" placeholder="업체명 검색 (마침표로 구분)">
+    <input type="text" id="search-input" placeholder="업체명 검색 (예: 파워.대우)">
     <button id="search-btn" class="btn">검색</button>
     <button id="reset-btn" class="btn">전체</button>
 </div>
@@ -56,6 +49,7 @@
 <div id="map"></div>
 
 <script>
+// [필독] '도일', '대우', '그린' 등의 주소가 아래 배열에서 정확한지 꼭 확인하세요!
 var businessData = [
     { short: "한일", name: "한일기전(사무실)", contacts: "최병두 차장:010-2430-6636", addr: "전남 여수시 흥국사길 50" },
     { short: "포에", name: "포에스엔지니어링", contacts: "임성현 과장:010-2646-8277", addr: "전남 여수시 여수산단로 579" },
@@ -244,30 +238,18 @@ var markers = [];
 var infoWindows = [];
 var myLocationMarker = null;
 
-// [개선] 다중 검색 함수
 function doSearch() {
     var inputVal = document.getElementById('search-input').value.trim().toLowerCase();
-    
-    if (!inputVal) {
-        markers.forEach(m => m.mObj.setMap(map));
-        return;
-    }
-
-    // 마침표(.)를 기준으로 키워드 분리 및 공백 제거
+    if (!inputVal) { markers.forEach(m => m.mObj.setMap(map)); return; }
     var keywords = inputVal.split('.').map(k => k.trim()).filter(k => k.length > 0);
-
     markers.forEach(function(m) {
-        // 여러 키워드 중 하나라도 포함되어 있으면 표시
-        var isMatch = keywords.some(function(key) {
-            return m.searchString.indexOf(key) !== -1;
-        });
+        var isMatch = keywords.some(key => m.searchString.indexOf(key) !== -1);
         m.mObj.setMap(isMatch ? map : null);
     });
 }
 
 window.startNavi = function(x, y, name) {
-    var dname = encodeURIComponent(name);
-    location.href = "nmap://navigation?dlat=" + y + "&dlng=" + x + "&dname=" + dname + "&appname=heoara.github.io";
+    location.href = "nmap://navigation?dlat=" + y + "&dlng=" + x + "&dname=" + encodeURIComponent(name) + "&appname=heoara.github.io";
 };
 
 window.copyAddr = function(text) {
@@ -280,8 +262,16 @@ window.closeAllInfo = function() { infoWindows.forEach(iw => iw.close()); };
 
 function initMarkers() {
     businessData.forEach(function(item) {
+        if(!item.addr || item.addr.includes("주소 입력")) {
+            console.warn(item.short + "의 주소가 입력되지 않았습니다.");
+            return;
+        }
+        
         naver.maps.Service.geocode({ query: item.addr }, function(status, response) {
-            if (status !== naver.maps.Service.Status.OK || response.v2.addresses.length === 0) return;
+            if (status !== naver.maps.Service.Status.OK || response.v2.addresses.length === 0) {
+                console.error("주소 찾기 실패: " + item.name + " (" + item.addr + ")");
+                return;
+            }
             var result = response.v2.addresses[0];
             var x = result.x, y = result.y;
 
@@ -293,6 +283,7 @@ function initMarkers() {
 
             var contactsHtml = item.contacts.split(',').map(function(c) {
                 var p = c.split(':');
+                if(p.length < 2) return `<div class="contact-item">${c}</div>`;
                 return `<div class="contact-item"><b>${p[0].trim()}</b><a href="tel:${p[1].trim()}" class="tel-link">${p[1].trim()}</a></div>`;
             }).join('');
 
@@ -301,7 +292,7 @@ function initMarkers() {
                             <div class="info-title">${item.name}</div>
                             <div>${contactsHtml}</div>
                             <div class="addr-text" onclick="window.copyAddr('${item.addr}')">📍 ${item.addr}</div>
-                            <div class="navi-btn" onclick="window.startNavi('${x}', '${y}', '${item.name}')">길안내 시작</div>
+                            <div class="navi-btn" onclick="window.startNavi('${x}', '${y}', '${item.name}')">네이버 길안내 시작</div>
                           </div>`,
                 borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -10)
             });
