@@ -8,8 +8,6 @@
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
         #map { width: 100%; height: 100vh; position: relative; z-index: 1; }
-        
-        /* 상단 검색바 */
         #search-container {
             position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
             width: 95%; max-width: 500px; z-index: 99999;
@@ -20,60 +18,36 @@
         .btn { border: none; padding: 10px 15px; font-weight: bold; cursor: pointer; font-size: 14px; }
         #search-btn { background-color: #28a745; color: white; }
         #reset-btn { background-color: #6c757d; color: white; border-radius: 0 30px 30px 0; }
-
-        /* 내 위치 버튼 */
         #mylocation-btn {
             position: fixed; bottom: 30px; right: 20px; z-index: 99999;
             width: 55px; height: 55px; background: white; border-radius: 50%;
             box-shadow: 0 4px 12px rgba(0,0,0,0.25); cursor: pointer;
             display: flex; align-items: center; justify-content: center; border: 2px solid #007bff;
         }
-
-        /* 마커 스타일 */
         .custom-marker { background: #28a745; color: white; padding: 4px 8px; border-radius: 15px; font-size: 11px; font-weight: bold; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; }
         .my-location-marker { width: 18px; height: 18px; background: #007bff; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.4); }
-
-        /* 인포윈도우 (주소 가독성 강화) */
-        .info-window { padding: 15px; width: 280px; background: #ffffff !important; border: 2px solid #28a745; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); line-height: 1.6; font-size: 14px; color: #333; position: relative; }
-        .info-title { font-weight: bold; font-size: 17px; margin-bottom: 10px; color: #000; border-bottom: 2px solid #28a745; padding-bottom: 5px; padding-right: 25px; word-break: keep-all; }
+        .info-window { padding: 15px; width: 260px; background: #ffffff !important; border: 2px solid #28a745; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); line-height: 1.6; font-size: 14px; color: #333; position: relative; }
+        .info-title { font-weight: bold; font-size: 17px; margin-bottom: 10px; color: #000; border-bottom: 2px solid #28a745; padding-bottom: 5px; word-break: keep-all; }
         .contact-item { margin: 6px 0; padding-bottom: 4px; border-bottom: 1px dashed #eee; display: flex; justify-content: space-between; align-items: center; }
-        .contact-name { font-weight: bold; color: #28a745; flex-shrink: 0; margin-right: 10px; }
         .tel-link { color: #007bff; text-decoration: none; font-weight: bold; font-size: 15px; }
-        
-        /* 주소 텍스트 스타일 개선 */
-        .addr-text { 
-            display: block;
-            margin-top: 10px;
-            padding: 8px;
-            background: #f9f9f9;
-            border-radius: 5px;
-            color: #444; 
-            font-size: 13px; 
-            line-height: 1.4;
-            word-break: keep-all; /* 단어 단위로 줄바꿈 */
-            border-left: 3px solid #ddd;
-        }
-        
-        .close-info-btn { position: absolute; top: 10px; right: 10px; background: #eee; border: none; font-size: 20px; font-weight: bold; color: #555; cursor: pointer; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        .navi-btn { background: #03C75A; color: white; width: 100%; border: none; padding: 12px; margin-top: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .addr-text { display: block; margin-top: 10px; padding: 8px; background: #f0f0f0; border-radius: 5px; color: #444; font-size: 13px; cursor: pointer; border-left: 3px solid #28a745; }
+        .addr-text:active { background: #e0e0e0; }
+        .navi-btn { background: #03C75A; color: white; width: 100%; border: none; padding: 12px; margin-top: 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 15px; text-align: center; display: block; text-decoration: none; }
     </style>
 </head>
 <body>
 
 <div id="search-container">
-    <input type="text" id="search-input" placeholder="업체명 또는 주소 검색 (. 구분)">
+    <input type="text" id="search-input" placeholder="업체명 검색">
     <button id="search-btn" class="btn">검색</button>
     <button id="reset-btn" class="btn">전체</button>
 </div>
 
-<div id="mylocation-btn">
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg>
-</div>
+<div id="mylocation-btn"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg></div>
 
 <div id="map"></div>
 
 <script>
-// 데이터 배열
 var businessData = [
     { short: "한일", name: "한일기전(사무실)", contacts: "최병두 차장:010-2430-6636", addr: "전남 여수시 흥국사길 50" },
     { short: "포에", name: "포에스엔지니어링", contacts: "임성현 과장:010-2646-8277", addr: "전남 여수시 여수산단로 579" },
@@ -257,23 +231,36 @@ var businessData = [
     { short: "우리", name: "우리통신(사무실)", contacts: "전석 대표:010-4599-4258, 오진희 과장:010-2889-0285, 사무실:061-722-1410", addr: "전남 순천시 고지4길 11-50" }
 ];
 
-var map = new naver.maps.Map('map', { 
-    center: new naver.maps.LatLng(34.85, 127.70), 
-    zoom: 11,
-    zoomControl: true
-});
-
+var map = new naver.maps.Map('map', { center: new naver.maps.LatLng(34.85, 127.70), zoom: 11 });
 var markers = [];
 var infoWindows = [];
 var myLocationMarker = null;
 
-// 화면 꺼짐 방지
-if ('wakeLock' in navigator) {
-    navigator.wakeLock.request('screen').catch(console.error);
-}
+// [개선] 길안내 함수: 앱 실행 시도 후 실패 시 웹으로 전환
+window.startNavi = function(x, y, name) {
+    var dname = encodeURIComponent(name);
+    var appUrl = "nmap://navigation?dlat=" + y + "&dlng=" + x + "&dname=" + dname + "&appname=heoara.github.io";
+    var webUrl = "https://map.naver.com/v5/directions/-/-/" + x + "," + y + "," + dname + "/-/car";
 
-window.openNaverNavi = function(x, y, name) {
-    location.href = "nmap://navigation?dlat=" + y + "&dlng=" + x + "&dname=" + encodeURIComponent(name) + "&appname=com.nhn.android.nmap";
+    var clickedAt = +new Date();
+    location.href = appUrl;
+
+    setTimeout(function() {
+        if (+new Date() - clickedAt < 2000) {
+            window.open(webUrl, '_blank');
+        }
+    }, 1500);
+};
+
+// [신규] 주소 복사 함수
+window.copyAddr = function(text) {
+    var t = document.createElement("textarea");
+    document.body.appendChild(t);
+    t.value = text;
+    t.select();
+    document.execCommand('copy');
+    document.body.removeChild(t);
+    alert("주소가 복사되었습니다: " + text);
 };
 
 window.closeAllInfo = function() { infoWindows.forEach(function(iw) { iw.close(); }); };
@@ -295,17 +282,15 @@ function initMarkers() {
                 var parts = c.split(':');
                 var name = parts[0] ? parts[0].trim() : "";
                 var tel = parts[1] ? parts[1].trim() : "";
-                return tel ? `<div class="contact-item"><span class="contact-name">${name}</span><a href="tel:${tel}" class="tel-link">${tel}</a></div>` 
-                           : `<div class="contact-item">${name}</div>`;
+                return tel ? `<div class="contact-item"><b>${name}</b><a href="tel:${tel}" class="tel-link">${tel}</a></div>` : `<div class="contact-item">${name}</div>`;
             }).join('');
 
             var infowindow = new naver.maps.InfoWindow({
                 content: `<div class="info-window">
-                            <button class="close-info-btn" onclick="window.closeAllInfo()">×</button>
                             <div class="info-title">${item.name}</div>
                             <div class="info-content">${contactsHtml}</div>
-                            <div class="addr-text">📍 ${item.addr}</div>
-                            <button class="navi-btn" onclick="window.openNaverNavi('${x}', '${y}', '${item.name}')">네이버 길안내 시작</button>
+                            <div class="addr-text" onclick="window.copyAddr('${item.addr}')">📍 ${item.addr} (클릭시 복사)</div>
+                            <div class="navi-btn" onclick="window.startNavi('${x}', '${y}', '${item.name}')">네이버 길안내 시작</div>
                           </div>`,
                 borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -10)
             });
@@ -323,32 +308,22 @@ function initMarkers() {
 
 function findMyLocation() {
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            var myCoord = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
+        navigator.geolocation.getCurrentPosition(function(p) {
+            var coord = new naver.maps.LatLng(p.coords.latitude, p.coords.longitude);
             if (myLocationMarker) myLocationMarker.setMap(null);
-            myLocationMarker = new naver.maps.Marker({
-                position: myCoord, map: map,
-                icon: { content: '<div class="my-location-marker"></div>', anchor: new naver.maps.Point(9, 9) }
-            });
-            map.morph(myCoord, 14);
+            myLocationMarker = new naver.maps.Marker({ position: coord, map: map, icon: { content: '<div class="my-location-marker"></div>', anchor: new naver.maps.Point(9, 9) } });
+            map.morph(coord, 14);
         }, null, { enableHighAccuracy: true });
     }
 }
 
 naver.maps.Event.addListener(map, 'click', window.closeAllInfo);
-naver.maps.Event.once(map, 'init_stylemap', function() {
-    initMarkers();
-    findMyLocation();
-});
-
+naver.maps.Event.once(map, 'init_stylemap', function() { initMarkers(); findMyLocation(); });
 document.getElementById('search-btn').onclick = function() {
     var val = document.getElementById('search-input').value.trim().replace(/\s+/g, '').toLowerCase();
     markers.forEach(m => m.mObj.setMap(!val || m.searchString.includes(val) ? map : null));
 };
-document.getElementById('reset-btn').onclick = function() {
-    document.getElementById('search-input').value = "";
-    markers.forEach(m => m.mObj.setMap(map));
-};
+document.getElementById('reset-btn').onclick = function() { document.getElementById('search-input').value = ""; markers.forEach(m => m.mObj.setMap(map)); };
 document.getElementById('mylocation-btn').onclick = findMyLocation;
 </script>
 </body>
