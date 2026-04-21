@@ -3,303 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Business Master Map</title>
-    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=zye1jjk3u0&submodules=geocoder"></script>
+    <title>거래처 통합 관리 지도</title>
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=zye1jjk3u0&submodules=geocoder"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Pretendard', -apple-system, sans-serif; }
-        #map { width: 100%; height: 100vh; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
+        #map { width: 100%; height: 100vh; position: relative; z-index: 1; }
         
-        /* 마커 디자인 */
-        .custom-marker { display: flex; flex-direction: column; align-items: center; }
-        .marker-label {
-            background: #2db400; color: white; padding: 3px 8px; border-radius: 12px;
-            font-size: 11px; font-weight: bold; border: 1px solid white; white-space: nowrap;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        #search-container {
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            width: 92%; max-width: 450px; z-index: 9999;
+            display: flex; background: white; padding: 5px; border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); align-items: center;
         }
-        .marker-addr-label {
-            background: rgba(255, 255, 255, 0.9); color: #333; padding: 1px 5px;
-            font-size: 10px; margin-top: 2px; border-radius: 4px; border: 1px solid #ccc;
-            white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis;
+        #search-input { flex: 1; border: none; padding: 10px 15px; font-size: 14px; outline: none; min-width: 0; }
+        .btn { border: none; padding: 8px 12px; font-weight: bold; cursor: pointer; font-size: 12px; white-space: nowrap; }
+        #search-btn { background-color: #28a745; color: white; border-radius: 20px 0 0 20px; }
+        #close-btn { background-color: #dc3545; color: white; border-left: 1px solid rgba(255,255,255,0.1); }
+        #reset-btn { background-color: #6c757d; color: white; border-radius: 0 20px 20px 0; border-left: 1px solid rgba(255,255,255,0.1); }
+        
+        #mylocation-btn {
+            position: fixed; bottom: 30px; right: 20px; z-index: 9999;
+            width: 55px; height: 55px; background: white; border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; border: 2px solid #007bff;
         }
+        
+        .custom-marker { background: #28a745; color: white; padding: 5px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); white-space: nowrap; }
+        .my-location-marker { width: 22px; height: 22px; background: #007bff; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,123,255,0.8); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
 
-        /* 정보창 디자인 */
-        .info-window { padding: 12px; min-width: 200px; line-height: 1.5; }
-        .info-title { font-weight: bold; font-size: 15px; color: #2db400; display: block; margin-bottom: 5px; }
-        .info-nav-link { font-size: 12px; color: #007bff; text-decoration: underline; cursor: pointer; display: block; margin-bottom: 8px; }
-        .tel-box { background: #f8f9fa; padding: 6px 10px; border-radius: 4px; margin-top: 5px; border: 1px solid #eee; }
-        .tel-link { font-size: 14px; color: #e53935; font-weight: bold; text-decoration: none; }
-        
-        .my-loc { width: 16px; height: 16px; background: #007bff; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        .info-window { padding: 15px; width: 240px; background: white; border-radius: 12px; position: relative; border: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .info-title { font-weight: bold; font-size: 17px; margin-bottom: 10px; color: #28a745; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; padding-right: 20px; }
+        .contact-list { margin-bottom: 12px; }
+        .contact-item { font-size: 14px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .contact-name { color: #555; font-weight: bold; font-size: 13px; }
+        .tel-link { color: #007bff; text-decoration: none; font-weight: bold; background: #eef6ff; padding: 2px 8px; border-radius: 4px; font-size: 13px; }
+        .addr-text { display: block; padding: 8px; background: #f9f9f9; border-radius: 5px; font-size: 11px; color: #666; cursor: pointer; border: 1px solid #eee; margin-top: 5px; text-align: center; }
+        .navi-btn { background: #03C75A; color: white; width: 100%; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 15px; }
+        .close-window-btn { position: absolute; top: 12px; right: 12px; font-size: 24px; color: #ccc; cursor: pointer; line-height: 1; }
     </style>
 </head>
 <body>
 
+<div id="search-container">
+    <input type="text" id="search-input" placeholder="업체명 또는 주소 검색">
+    <button id="search-btn" class="btn">검색</button>
+    <button id="close-btn" class="btn">닫기</button>
+    <button id="reset-btn" class="btn">전체</button>
+</div>
+
+<div id="mylocation-btn">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#007bff" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg>
+</div>
+
 <div id="map"></div>
 
 <script>
-    // 제공해주신 전체 데이터 리스트
-    var locations = [
-        { short: "한일", name: "한일기전(사무실)", contacts: [{n: "최병두 차장", p: "010-2430-6636"}], addr: "전남 여수시 흥국사길 50" },
-        { short: "포에", name: "포에스엔지니어링", contacts: [{n: "임성현 과장", p: "010-2646-8277"}], addr: "전남 여수시 여수산단로 579" },
-        { short: "신화", name: "신화소방", contacts: [{n: "서민 차장", p: "010-9410-3355"}], addr: "전남 여수시 중흥3로 1-11" },
-        { short: "데이", name: "데이타렉스", contacts: [{n: "정정현 이사", p: "010-3977-7299"}], addr: "전남 여수시 중흥3로 15-4" },
-        { short: "건영", name: "건영전기", contacts: [{n: "김등용 이사", p: "010-2607-1462"}], addr: "전남 여수시 여수산단2로 15" },
-        { short: "건영", name: "건영전기(창고)", contacts: [{n: "김등용 이사", p: "010-2607-1462"}], addr: "전남 여수시 중흥2로 11" },
-        { short: "성전", name: "성전이엔씨", contacts: [{n: "사무실", p: "061-653-8218"}], addr: "전남 여수시 좌수영로 889" },
-        { short: "선두", name: "선두전력", contacts: [{n: "서남일 대표", p: "010-9695-4448"}], addr: "전남 여수시 둔덕4길 9" },
-        { short: "신일", name: "신일전기건업", contacts: [{n: "대표", p: "010-6292-1007"}], addr: "전남 여수시 용수길 2-11" },
-        { short: "우리", name: "우리전력", contacts: [{n: "정재남 대표", p: "010-3620-2857"}], addr: "전남 여수시 만성로 147" },
-        { short: "우리", name: "우리전력(야적장)", contacts: [{n: "정재남 대표", p: "010-3620-2857"}], addr: "전남 여수시 미평동 459-8" },
-        { short: "이레", name: "이레계전", contacts: [{n: "김기연 대표", p: "010-8149-4932"}], addr: "전남 여수시 미평남5길 8" },
-        { short: "형제", name: "형제전력", contacts: [{n: "정채신 대표", p: "010-3623-0524"}], addr: "전남 여수시 문수북1길 38-14" },
-        { short: "대일", name: "대일전력", contacts: [{n: "김동욱 대표", p: "010-8943-0008"}], addr: "전남 여수시 봉산남6길 17-20" },
-        { short: "대양", name: "대양전기", contacts: [{n: "사무실", p: "061-651-7779"}], addr: "전남 여수시 서부로 57-19" },
-        { short: "엠케", name: "엠케이전력(선원동)", contacts: [{n: "김상대 과장", p: "010-8602-2179"}], addr: "전남 여수시 화산로 122" },
-        { short: "화성", name: "화성전력", contacts: [{n: "장완 대표", p: "010-3643-2691"}], addr: "전남 여수시 미평로 33-2" },
-        { short: "금성", name: "금성소방", contacts: [{n: "손지민 대리", p: "010-4558-0978"}], addr: "전남 여수시 신기북4길 16" },
-        { short: "대성", name: "대성소방", contacts: [{n: "사무실", p: "061-683-4417"}], addr: "전남 여수시 신기북2길 15" },
-        { short: "마루", name: "마루소방", contacts: [{n: "홍경범 대표", p: "010-2972-4633"}], addr: "전남 여수시 미평남2길 2" },
-        { short: "세진", name: "세진계전", contacts: [{n: "장동기 부장", p: "010-5690-5904"}], addr: "전남 여수시 성산6길 27-4" },
-        { short: "아진", name: "아진전력", contacts: [{n: "장찬명 과장", p: "010-8616-6784"}], addr: "전남 여수시 여수산단로 282" },
-        { short: "일광", name: "일광전기", contacts: [{n: "장재호 소장", p: "010-3645-4512"}, {n: "이성자 대표", p: "010-7355-4408"}], addr: "전남 여수시 소라면 조산로 288" },
-        { short: "태광", name: "태광계전", contacts: [{n: "정광호 부장", p: "010-7581-5337"}], addr: "전남 여수시 덕양삼거리길 25" },
-        { short: "엑스", name: "엑스포전력", contacts: [{n: "박원준 부장", p: "010-8556-5587"}], addr: "전남 여수시 주삼덕양로 68" },
-        { short: "한솔", name: "한솔산전", contacts: [{n: "김재운 대표", p: "010-3641-7887"}], addr: "전남 여수시 소호2길 5-4" },
-        { short: "소원", name: "소원전력", contacts: [{n: "임충식 대표", p: "010-3621-8740"}], addr: "전남 여수시 통천길 26-14" },
-        { short: "명성", name: "명성전기", contacts: [{n: "서진호 대표", p: "010-9884-3369"}], addr: "전남 여수시무선5길 6" },
-        { short: "한려", name: "한려이엔지", contacts: [{n: "박문수 대표", p: "010-6652-0115"}], addr: "전남 여수시 동문로 83-1" },
-        { short: "은성", name: "은성계전", contacts: [{n: "박종호 대표", p: "010-4458-8626"}], addr: "전남 여수시 화양로 1591-1" },
-        { short: "조영", name: "조영", contacts: [{n: "김경진 대표", p: "010-2168-2384"}], addr: "전남 여수시 화산1길 52" },
-        { short: "영동", name: "영동이엔씨", contacts: [{n: "사무실", p: "061-652-8881"}], addr: "전남 여수시 봉계6길 12-1" },
-        { short: "알파", name: "알파이앤시", contacts: [{n: "김승현 팀장", p: "010-9095-0175"}], addr: "전남 여수시 망양로 1244" },
-        { short: "국제", name: "국제전기", contacts: [{n: "김문수 이사", p: "010-6346-2111"}], addr: "전남 여수시 여순로 163" },
-        { short: "제일", name: "제일전기공사", contacts: [{n: "대표", p: "010-9115-4708"}], addr: "전남 여수시 신기북2길 5" },
-        { short: "한화", name: "한화에너지", contacts: [{n: "송동준", p: "010-9210-5750"}], addr: "전남 여수시 산단중앙로 145" },
-        { short: "이피", name: "이피테크", contacts: [{n: "사무실", p: "061-686-7790"}, {n: "주정국 이사", p: "010-6803-6259"}], addr: "전남 여수시 상암로 169-1" },
-        { short: "삼광", name: "삼광전력", contacts: [{n: "대표", p: "010-9579-5678"}], addr: "전남 여수시 장개재길 32" },
-        { short: "에스", name: "에스더블유", contacts: [{n: "류문선 이사", p: "010-6614-8792"}], addr: "전남 여수시 성사로 17" },
-        { short: "두리", name: "두리이앤지", contacts: [{n: "대표", p: "010-6617-1317"}], addr: "전남 여수시 대통3길 38" },
-        { short: "조은", name: "조은전력", contacts: [{n: "강민수 과장", p: "010-3442-3449"}], addr: "전남 여수시 화양면 나진길 46" },
-        { short: "진영", name: "진영전력", contacts: [{n: "사무실", p: "061-651-6031"}], addr: "전남 여수시 문수로 91" },
-        { short: "명가", name: "명가하우징", contacts: [{n: "박형우 대표", p: "010-7648-8741"}], addr: "전남 여수시 미평3길 48" },
-        { short: "제이", name: "제이티전력", contacts: [{n: "김성균 대표", p: "010-7103-5436"}], addr: "전남 여수시 미평6길 15-2" },
-        { short: "나진", name: "나진전기", contacts: [{n: "사무실", p: "061-685-6787"}], addr: "전남 여수시 새터로 73" },
-        { short: "범우", name: "범우이앤씨", contacts: [{n: "김동현 차장", p: "010-5758-5079"}], addr: "전남 여수시 성산로 47" },
-        { short: "한길", name: "한길전력", contacts: [{n: "사무실", p: "061-641-1177"}], addr: "전남 여수시 소호관기로 140" },
-        { short: "융창", name: "융창이엔지", contacts: [{n: "서태현 대표", p: "010-2031-1036"}], addr: "전남 여수시 신기북2길 9" },
-        { short: "금호", name: "금호소방", contacts: [{n: "사무실", p: "061-684-2990"}], addr: "전남 여수시 쌍봉로 135" },
-        { short: "동우", name: "동우전력", contacts: [{n: "사무실", p: "061-691-9982"}], addr: "전남 여수시 좌수영로 1160" },
-        { short: "부림", name: "부림전기", contacts: [{n: "사무실", p: "061-684-5776"}], addr: "전남 여수시 주동1길 27-8" },
-        { short: "딘스", name: "딘스텔엔지니어링", contacts: [{n: "김태진 이사", p: "010-8616-4777"}], addr: "전남 여수시 학동5길 13" },
-        { short: "케이", name: "케이에프시스템", contacts: [{n: "사무실", p: "061-681-6426"}], addr: "전남 여수시 화양면 화양로 1591-1" },
-        { short: "전기", name: "전기안전서비스", contacts: [{n: "사무실", p: "061-686-5825"}], addr: "전남 여수시 성산2길 14-12" },
-        { short: "엑스", name: "엑스포(금호폴리켐)", contacts: [{n: "담당자", p: "010-8556-5587"}], addr: "전남 여수시 산단중앙로 613" },
-        { short: "이피", name: "이피테크(롯데첨단)", contacts: [{n: "주정국 이사", p: "010-6803-6259"}], addr: "전남 여수시 여수산단로 334-27" },
-        { short: "경우", name: "경우전력", contacts: [{n: "윤미점 이사", p: "010-8876-6078"}, {n: "사무실", p: "061-643-0433"}], addr: "전남 여수시 신월로 759-1" },
-        { short: "제일", name: "제일소방전기", contacts: [{n: "안영삼 부장", p: "010-6585-0303"}], addr: "경남 진주시 문산읍 동부로 386-1" },
-        { short: "엔에", name: "엔에스전기", contacts: [{n: "문덕기 이사", p: "010-3842-7745"}], addr: "경남 진주시 금산로 249번길 53" },
-        { short: "엔에", name: "엔에스전기(웅천)", contacts: [{n: "최원일 소장", p: "010-2607-0219"}], addr: "전남 여수시 웅천동 1701" },
-        { short: "예스", name: "예스정보통신", contacts: [{n: "사무실", p: "055-763-3838"}], addr: "경남 진주시 서장대로 393번길 14" },
-        { short: "대지", name: "대지정보통신", contacts: [{n: "대표", p: "010-4243-0826"}], addr: "경남 진주시 돗골로 20번길 15" },
-        { short: "진주", name: "진주정보통신", contacts: [{n: "대표", p: "010-3563-5430"}], addr: "경남 진주시 모덕로277번길 22" },
-        { short: "대영", name: "대영전설", contacts: [{n: "정명래 부장", p: "010-2008-2050"}], addr: "경남 진주시 화개길 194번길 129-10" },
-        { short: "태경", name: "태경전기", contacts: [{n: "박광요 소장", p: "010-9474-0866"}, {n: "박영근 이사", p: "010-7112-1248"}], addr: "경남 진주시 말티고개로 50" },
-        { short: "태경", name: "태경전기(김해)", contacts: [{n: "박광요 소장", p: "010-9474-0866"}], addr: "경남 김해시 진영읍 여래리 4" },
-        { short: "파워", name: "파워전력", contacts: [{n: "사무실", p: "055-755-1238"}], addr: "경남 진주시 내동면 신율길 127" },
-        { short: "에스", name: "에스에스전기조명", contacts: [{n: "대표", p: "010-5050-8884"}], addr: "경남 진주시 명석면 나불로 215-26" },
-        { short: "신라", name: "신라테크원", contacts: [{n: "대표", p: "010-3882-6215"}], addr: "경남 진주시 문산읍 삼곡길 12-3" },
-        { short: "대한", name: "대한전기소방", contacts: [{n: "사무실", p: "055-746-1577"}], addr: "경남 진주시 유곡죽전길 5" },
-        { short: "세기", name: "세기", contacts: [{n: "사무실", p: "055-753-3198"}], addr: "경남 진주시 정촌면 삼일로106번길 9-20" },
-        { short: "부흥", name: "부흥전기소방공사", contacts: [{n: "노종성 상무", p: "010-3573-3252"}, {n: "사무실", p: "055-762-8797"}], addr: "경남 진주시 정촌면 화개천로54번길 57" },
-        { short: "대경", name: "대경전기", contacts: [{n: "대표", p: "010-3839-1479"}], addr: "경남 진주시 진산로 409" },
-        { short: "가야", name: "가야건업", contacts: [{n: "신영웅 이사", p: "010-5164-5635"}], addr: "경남 진주시 금산로 중천로7번길 5-2" },
-        { short: "남부", name: "남부전기", contacts: [{n: "서인태 부장", p: "010-5050-8884"}], addr: "경남 사천시 주공1길 23" },
-        { short: "국제", name: "국제전기조명공사", contacts: [{n: "김정현 대표", p: "010-5237-7629"}], addr: "경남 사천시 향촌동 228-1" },
-        { short: "해성", name: "해성전기건설", contacts: [{n: "대표", p: "010-9392-5767"}], addr: "경남 사천시 곤명면 정곡리939-7" },
-        { short: "해성", name: "해성전기건설(여수해양)", contacts: [{n: "대표", p: "010-9392-5767"}, {n: "부장", p: "010-9365-5767"}], addr: "전남 여수시 신추길 54" },
-        { short: "에이", name: "에이원전력", contacts: [{n: "강호재 대표", p: "010-2002-9400"}], addr: "경남 사천시 동문2길 181" },
-        { short: "성민", name: "성민전력", contacts: [{n: "대표", p: "010-3860-1143"}, {n: "사무실", p: "055-882-4790"}], addr: "경남 하동군 공설운동장로 183-22" },
-        { short: "강산", name: "강산전기", contacts: [{n: "사무실", p: "055-884-7824"}], addr: "경남 하동군 하동읍 210-1" },
-        { short: "삼화", name: "삼화전기", contacts: [{n: "사무실", p: "055-884-3372"}], addr: "경남 하동군 고전면 사막2길 9" },
-        { short: "이성", name: "이성정보통신", contacts: [{n: "대표", p: "010-8507-3941"}], addr: "경남 의령군 의령읍 벽화로8길 16" },
-        { short: "현대", name: "현대전기공사", contacts: [{n: "대표", p: "010-3862-6787"}], addr: "경남 의령군 의령읍 의병로 19길 5-1" },
-        { short: "우리", name: "우리이엔씨", contacts: [{n: "최진혁 이사", p: "010-9995-6568"}], addr: "전남 광양시 서평9길 20" },
-        { short: "청우", name: "청우전기", contacts: [{n: "김선태 소장", p: "010-7616-8795"}], addr: "전남 광양시 제철로 997-28" },
-        { short: "청우", name: "청우전기(구봉산)", contacts: [{n: "서용민 소장", p: "010-2996-0529"}], addr: "전남 광양시 구봉산전망대길 155" },
-        { short: "해창", name: "해창이엔씨", contacts: [{n: "양경용 팀장", p: "010-3606-8583"}], addr: "전남 광양시 길호5길 9" },
-        { short: "딘스", name: "딘스텔엔지니어링(중동)", contacts: [{n: "강기표 과장", p: "010-8147-4133"}], addr: "전남 광양시 중동 308-114" },
-        { short: "대일", name: "대일소방", contacts: [{n: "사무실", p: "061-793-1198"}], addr: "전남 광양시 눈소5길 55-5" },
-        { short: "문경", name: "문경전력", contacts: [{n: "이원배 이사", p: "010-4607-2046"}], addr: "전남 광양시 용강2길 9-7" },
-        { short: "지엔", name: "지엔비테크", contacts: [{n: "허성구 소장", p: "010-9442-5617"}], addr: "전남 광양시 광양읍 유당로 152" },
-        { short: "동신", name: "동신", contacts: [{n: "사무실", p: "061-791-4001"}], addr: "전남 광양시 눈소2길 15" },
-        { short: "서전", name: "서전전력", contacts: [{n: "안재성 대표", p: "010-8551-2727"}], addr: "전남 광양시 광양읍 서평1길 99" },
-        { short: "유에", name: "유에스에너지", contacts: [{n: "김재민 대표", p: "010-2332-1793"}], addr: "전남 광양시 익신산단1길 10-25" },
-        { short: "예일", name: "예일종합이엔씨", contacts: [{n: "문병대 대표", p: "010-4626-2326"}], addr: "전남 광양시 광양읍 대림오성로 74" },
-        { short: "광양", name: "광양이엔씨", contacts: [{n: "정용준 소장", p: "010-2955-5224"}, {n: "대표", p: "010-5611-7800"}], addr: "전남 광양시 태인5길 46" },
-        { short: "하나", name: "하나전기계전", contacts: [{n: "이후근 대표", p: "010-3622-7290"}], addr: "전남 광양시 성북길 32-1" },
-        { short: "화신", name: "화신전력", contacts: [{n: "김현성 대표", p: "010-4620-2190"}], addr: "전남 광양시 마동 1023-2" },
-        { short: "현대", name: "현대종합상사", contacts: [{n: "사무실", p: "061-772-8878"}], addr: "전남 광양시 옥곡면 신금산단4길 25" },
-        { short: "아주", name: "아주전력", contacts: [{n: "황선호 이사", p: "010-3616-1474"}], addr: "전남 광양시 광양읍 서평6길 26" },
-        { short: "우성", name: "우성이엔지", contacts: [{n: "사무실", p: "061-727-8204"}], addr: "전남 광양시 광영동 새미골1길" },
-        { short: "파라", name: "파라곤", contacts: [{n: "방기종 전무", p: "010-6355-2744"}], addr: "전남 광양시 등논3길 9-9" },
-        { short: "석경", name: "석경이엔지", contacts: [{n: "조영남 대표", p: "010-3628-5840"}], addr: "전남 광양시 영수길 8" },
-        { short: "장원", name: "장원엔지니어링", contacts: [{n: "사무실", p: "061-772-1908"}], addr: "전남 광양시 옥곡면 장동길 22-1" },
-        { short: "하나", name: "하나시스템", contacts: [{n: "황의환 대표", p: "010-4617-5320"}], addr: "전남 광양시 중동1길 22" },
-        { short: "청원", name: "청원전기(광양)", contacts: [{n: "서인재 대표", p: "010-4620-1428"}], addr: "전남 광양시 시청로 1" },
-        { short: "서광", name: "서광텔레콤", contacts: [{n: "대표", p: "010-3609-4503"}], addr: "전남 광양시 중마용소길 60" },
-        { short: "동방", name: "동방이엔씨", contacts: [{n: "우정근 대표", p: "010-4624-1561"}], addr: "전남 광양시 옥룡면 석곡길 9-32" },
-        { short: "씨엠", name: "씨엠파워", contacts: [{n: "이슬희 과장", p: "010-3009-2146"}], addr: "전남 광양시 광양읍 동주2길 30-16" },
-        { short: "신한", name: "신한이엔에스", contacts: [{n: "박덕호 이사", p: "010-2617-7955"}], addr: "전남 광양시 도촌길 13-23" },
-        { short: "대한", name: "대한산업공사", contacts: [{n: "사무실", p: "061-751-6955"}], addr: "전남 순천시 원가곡3길 6-15" },
-        { short: "동광", name: "동광이엔지", contacts: [{n: "대표", p: "010-3626-3660"}, {n: "최성욱 부장", p: "010-9908-6755"}], addr: "전남 순천시 망산1길 26" },
-        { short: "호경", name: "호경", contacts: [{n: "조용오 대표", p: "010-9442-7511"}], addr: "전남 순천시 원연향길 109" },
-        { short: "삼오", name: "삼오전기", contacts: [{n: "대표", p: "010-3612-1300"}], addr: "전남 순천시 해비치1길 40" },
-        { short: "갑을", name: "갑을전력", contacts: [{n: "채해석 대표", p: "010-6647-8502"}], addr: "전남 순천시 해광로 410" },
-        { short: "국일", name: "국일전력", contacts: [{n: "사무실", p: "061-725-3115"}, {n: "정은효 전무", p: "010-3641-8574"}], addr: "전남 순천시 율산길 106" },
-        { short: "무창", name: "무창전력", contacts: [{n: "배석종 이사", p: "010-6618-8881"}], addr: "전남 순천시 장평4길" },
-        { short: "삼성", name: "삼성소방공사", contacts: [{n: "사무실", p: "061-741-7119"}], addr: "전남 순천시 압곡길 115-109" },
-        { short: "창대", name: "창대이엔씨", contacts: [{n: "김종현 이사", p: "010-7674-9549"}], addr: "전남 순천시 선평길 29" },
-        { short: "이정", name: "이정", contacts: [{n: "나성호 대표", p: "010-5622-7297"}], addr: "전남 순천시 가곡3길 11" },
-        { short: "세현", name: "세현", contacts: [{n: "사무실", p: "061-727-5947"}, {n: "윤대호 과장", p: "010-3890-4133"}], addr: "전남 순천시 발흥길 16" },
-        { short: "중앙", name: "중앙이엔지", contacts: [{n: "사무실", p: "061-752-2020"}], addr: "전남 순천시 가곡2길 5" },
-        { short: "청원", name: "청원전기(순천)", contacts: [{n: "서인재 대표", p: "010-4620-1428"}], addr: "전남 순천시 상사면 오실길 43" },
-        { short: "중앙", name: "중앙방재", contacts: [{n: "서인영 대표", p: "010-9866-9713"}], addr: "전남 순천시 고지5길 14-6" },
-        { short: "일신", name: "일신테크", contacts: [{n: "권정수 대표", p: "010-7610-3996"}], addr: "전남 순천시 서면 화정1길 22" },
-        { short: "강주", name: "강주", contacts: [{n: "김사영 이사", p: "010-6345-3543"}], addr: "전남 순천시 백강로 486" },
-        { short: "국제", name: "국제이앤씨", contacts: [{n: "사무실", p: "061-753-1401"}, {n: "오병록 대리", p: "010-4166-1639"}], addr: "전남 순천시 지본금평길 18" },
-        { short: "디유", name: "디유파워", contacts: [{n: "정장균 대표", p: "010-3640-3642"}], addr: "전남 순천시 신풍길 16" },
-        { short: "두산", name: "두산전력", contacts: [{n: "사무실", p: "061-745-5453"}], addr: "전남 순천시 환선로 54-1" },
-        { short: "그린", name: "그린소방", contacts: [{n: "정보없음", p: ""}], addr: "전남 순천시 중앙로 491-24" },
-        { short: "태산", name: "태산전기", contacts: [{n: "사무실", p: "061-753-9961"}], addr: "전남 순천시 서면 산단2길 25" },
-        { short: "에스", name: "에스디", contacts: [{n: "김광오 이사", p: "010-2655-4859"}], addr: "전남 순천시 백강로 617" },
-        { short: "올디", name: "올디자인솔루션", contacts: [{n: "고으뜸 대표", p: "010-9141-9990"}], addr: "전남 순천시 율촌산단1로 80-35" },
-        { short: "아이", name: "아이티이앤씨", contacts: [{n: "사무실", p: "061-721-6573"}], addr: "전남 순천시 해룡면 용전1길 40-1" },
-        { short: "우영", name: "우영전력", contacts: [{n: "김승빈 대표", p: "010-9432-9021"}], addr: "전남 순천시 민속마을길 502-25" },
-        { short: "현광", name: "현광엔지니어링", contacts: [{n: "최영호 상무", p: "010-2625-5251"}], addr: "전남 순천시 해룡면 용전길 43" },
-        { short: "광진", name: "광진케이블", contacts: [{n: "정보없음", p: ""}], addr: "부산시 남구 신선로 259-16" },
-        { short: "씨엠", name: "씨엠파워(해남)", contacts: [{n: "담당자", p: "010-3634-4069"}], addr: "전남 해남군 해남읍 중앙2로 100-1" },
-        { short: "세진", name: "세진계전(한화)", contacts: [{n: "임채근 소장", p: "010-8505-8085"}], addr: "전남 여수시 신월로 413" },
-        { short: "대호", name: "대호전기공사", contacts: [{n: "대표", p: "010-4545-5117"}], addr: "경남 사천시 서향안길 75" },
-        { short: "한려", name: "한려이엔지(여수중)", contacts: [{n: "박문수 대표", p: "010-6652-0115"}], addr: "전남 여수시 공화북4길 19-1" },
-        { short: "대방", name: "대방지", contacts: [{n: "박장진", p: ""}], addr: "경남 의령군 정곡면 법정로5길 67-2" },
-        { short: "동부", name: "동부이엔씨(현장)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}], addr: "전남 광양시 광양읍 예구6길 21" },
-        { short: "쌍용", name: "쌍용전력(자택)", contacts: [{n: "김천종 소장", p: "010-5608-3602"}], addr: "전남 여수시 소라면 서부로 192-34" },
-        { short: "동우", name: "동우전력(동성)", contacts: [{n: "김옥만 이사", p: "010-2605-7492"}, {n: "신창호 부장", p: "010-2000-1884"}], addr: "전남 여수시 여수산단2로 223-40" },
-        { short: "석광", name: "석광아이티에스", contacts: [{n: "사무실", p: "055-758-0326"}], addr: "경남 진주시 연꽃로 165번길 57" },
-        { short: "석광", name: "석광아이티에스(현장)", contacts: [{n: "주성철 담당자", p: "010-9205-0884"}], addr: "경남 진주시 충무공동 184" },
-        { short: "알파", name: "알파이앤시(힐스2)", contacts: [{n: "담당자", p: "010-7322-0444"}], addr: "전남 여수시 박람회길 81" },
-        { short: "서전", name: "서전전력(해룡)", contacts: [{n: "안재성 대표", p: "010-8551-2727"}], addr: "전남 순천시 해룡면 호두길 79-59" },
-        { short: "무창", name: "무창전력(현장)", contacts: [{n: "김남훈 차장", p: "010-8607-5896"}], addr: "전남 순천시 성죽길 53" },
-        { short: "도일", name: "도일(사무실)", contacts: [{n: "김도은", p: ""}], addr: "전남 여수시 율촌면 율촌로 83-1" },
-        { short: "도일", name: "도일(벌교)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}], addr: "전남 보성군 벌교읍 회정리 474" },
-        { short: "시에", name: "시에스이엔아이", contacts: [{n: "김철수 대표", p: "010-5680-3703"}, {n: "전주림", p: "010-4543-9951"}], addr: "전남 여수시 상암로 581" },
-        { short: "동부", name: "동부이엔씨(사무실)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}, {n: "남영미 이사", p: "010-3074-4720"}], addr: "전남 광양시 광양읍 예구6길 21" },
-        { short: "동부", name: "동부이엔씨(벌교)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}, {n: "남영미 이사", p: "010-3074-4720"}], addr: "전남 보성군 벌교읍 회정리 474" },
-        { short: "이피", name: "이피테크(낙포부두)", contacts: [{n: "용철 대표", p: "010-6808-0994"}], addr: "전남 여수시 낙포동 197-35" },
-        { short: "한솔", name: "한솔전기", contacts: [{n: "정보없음", p: ""}], addr: "부산시 사상구 낙동대로 1048번길 22" },
-        { short: "동광", name: "동광이엔지(관리)", contacts: [{n: "윤점숙", p: "061-751-0091"}], addr: "전남 순천시 망산1길 26" },
-        { short: "성신", name: "성신이엔씨", contacts: [{n: "김도은 실장", p: "010-7556-0000"}, {n: "사무실", p: "061-751-5511"}], addr: "전남 광양시 광양읍 인덕로 967-1" },
-        { short: "에스", name: "에스알이엔지", contacts: [{n: "김청수 부장", p: "010-8611-7617"}, {n: "사무실", p: "061-723-1000"}], addr: "전남 순천시 해룡면 해룡산단6로 108" },
-        { short: "세양", name: "세양케이블판매", contacts: [{n: "사무실", p: "051-323-0061"}], addr: "부산시 사상구 학장동 274-6" },
-        { short: "태진", name: "태진전기", contacts: [{n: "대표번호", p: "1661-4602"}], addr: "전남 광양시 옥곡면 신금산단5길 70-31" },
-        { short: "충전", name: "부산문화회관(충전)", contacts: [{n: "전기차 충전", p: ""}], addr: "부산시 남구 유엔평화로 76번길 1" },
-        { short: "포스", name: "포스솔루션(공장)", contacts: [{n: "안동준 부장", p: "010-7100-6199"}, {n: "사무실", p: "061-795-1211"}], addr: "전남 광양시 옥곡면 강변로 217" },
-        { short: "포스", name: "포스솔루션(사무실)", contacts: [{n: "안동준 부장", p: "010-7100-6199"}, {n: "사무실", p: "061-795-1211"}], addr: "전남 광양시 중마로 21" },
-        { short: "해창", name: "해창이엔씨(제철로)", contacts: [{n: "김지호 리더", p: "010-7929-1469"}], addr: "전남 광양시 제철로 1800" },
-        { short: "대우", name: "대우비엔알", contacts: [{n: "사무실 정보없음", p: ""}], addr: "전남 광양시 제철로 1410" },
-        { short: "성신", name: "성신이엔씨(산단문)", contacts: [{n: "안인태 소장", p: "010-4788-4553"}, {n: "정민호 과장", p: "010-3870-4721"}], addr: "전남 광양시 산업로 231" },
-        { short: "성신", name: "성신이엔씨(기자재)", contacts: [{n: "안인태 소장", p: "010-4788-4553"}, {n: "정민호 과장", p: "010-3870-4721"}], addr: "전남 광양시 제철로 1704" },
-        { short: "동신", name: "동신(도이야적장)", contacts: [{n: "김만곤 부장", p: "010-4622-2220"}, {n: "강민수 과장", p: "010-4081-1083"}], addr: "전남 광양시 도이동 483-5" },
-        { short: "기경", name: "기경(여수현장)", contacts: [{n: "김경환 소장", p: "010-3622-5330"}], addr: "전남 여수시 선소마을길 9" },
-        { short: "기경", name: "기경(사무실)", contacts: [{n: "김영호 부장", p: "010-5048-4605"}, {n: "사무실", p: "061-763-0485"}], addr: "전남 광양시 서천1길 70-5" },
-        { short: "기경", name: "기경(성황초)", contacts: [{n: "곽도훈", p: "010-5607-7082"}, {n: "성용강", p: "010-8585-3692"}], addr: "전남 광양시 지동길 15" },
-        { short: "엠에", name: "엠에스피", contacts: [{n: "김진경 차장", p: "010-3353-3582"}, {n: "사무실", p: "055-854-6519"}], addr: "경남 사천시 사천읍 방곡길 20" },
-        { short: "우양", name: "우양이엔지", contacts: [{n: "사무실", p: "061-811-2581"}], addr: "전남 순천시 상사면 오실길 54" },
-        { short: "태성", name: "태성계전", contacts: [{n: "차대웅 이사", p: "010-4490-3979"}, {n: "사무실", p: "061-724-3837"}], addr: "전남 순천시 해룡면 월전길 3" },
-        { short: "파워", name: "파워엔지니어링", contacts: [{n: "박인호 대표", p: "010-4532-5298"}, {n: "조호성 차장", p: "010-2662-0281"}], addr: "전남 광양시 광양읍 익신산단1길 50" },
-        { short: "화성", name: "화성전력(엑스포)", contacts: [{n: "장준수 과장", p: "010-9403-2691"}], addr: "전남 여수시 덕충동 1998-1" },
-        { short: "우리", name: "우리통신", contacts: [{n: "전석 대표", p: "010-4599-4258"}, {n: "오진희 과장", p: "010-2889-0285"}], addr: "전남 순천시 고지4길 11-50" },
-        { short: "메가", name: "메가전력", contacts: [{n: "강효원 소장", p: "010-6648-7184"}, {n: "사무실", p: "061-727-0366"}], addr: "전남 순천시 북정2길 5" },
-        { short: "메가", name: "메가전력(곡성현장)", contacts: [{n: "강효원 소장", p: "010-6648-7184"}, {n: "사무실", p: "061-727-0366"}], addr: "전남 곡성군 옥과면 미술관로 288" },
-        { short: "세아", name: "세아앰앤에스", contacts: [{n: "오재관 이사", p: "010-8221-3015"}], addr: "전남 여수시 산단중앙로 188" },
-        { short: "충전", name: "우암동행정복지센터", contacts: [{n: "전기차 충전소", p: ""}], addr: "부산시 남구 동제당로 368" }
-    ];
+// 모든 데이터를 {n: 이름, p: 번호} 형식으로 변환하여 적용
+var businessData = [
+    { short: "한일", name: "한일기전(사무실)", contacts: [{n: "최병두 차장", p: "010-2430-6636"}], addr: "전남 여수시 흥국사길 50" },
+    { short: "포에", name: "포에스엔지니어링", contacts: [{n: "임성현 과장", p: "010-2646-8277"}], addr: "전남 여수시 여수산단로 579" },
+    { short: "신화", name: "신화소방", contacts: [{n: "서민 차장", p: "010-9410-3355"}], addr: "전남 여수시 중흥3로 1-11" },
+    { short: "데이", name: "데이타렉스", contacts: [{n: "정정현 이사", p: "010-3977-7299"}], addr: "전남 여수시 중흥3로 15-4" },
+    { short: "건영", name: "건영전기", contacts: [{n: "김등용 이사", p: "010-2607-1462"}], addr: "전남 여수시 여수산단2로 15" },
+    { short: "건영", name: "건영전기(창고)", contacts: [{n: "김등용 이사", p: "010-2607-1462"}], addr: "전남 여수시 중흥2로 11" },
+    { short: "성전", name: "성전이엔씨", contacts: [{n: "사무실", p: "061-653-8218"}], addr: "전남 여수시 좌수영로 889" },
+    { short: "선두", name: "선두전력", contacts: [{n: "서남일 대표", p: "010-9695-4448"}], addr: "전남 여수시 둔덕4길 9" },
+    { short: "신일", name: "신일전기건업", contacts: [{n: "대표", p: "010-6292-1007"}], addr: "전남 여수시 용수길 2-11" },
+    { short: "우리", name: "우리전력", contacts: [{n: "정재남 대표", p: "010-3620-2857"}], addr: "전남 여수시 만성로 147" },
+    { short: "우리", name: "우리전력(야적장)", contacts: [{n: "정재남 대표", p: "010-3620-2857"}], addr: "전남 여수시 미평동 459-8" },
+    { short: "이레", name: "이레계전", contacts: [{n: "김기연 대표", p: "010-8149-4932"}], addr: "전남 여수시 미평남5길 8" },
+    { short: "형제", name: "형제전력", contacts: [{n: "정채신 대표", p: "010-3623-0524"}], addr: "전남 여수시 문수북1길 38-14" },
+    { short: "대일", name: "대일전력", contacts: [{n: "김동욱 대표", p: "010-8943-0008"}], addr: "전남 여수시 봉산남6길 17-20" },
+    { short: "대양", name: "대양전기", contacts: [{n: "사무실", p: "061-651-7779"}], addr: "전남 여수시 서부로 57-19" },
+    { short: "엠케", name: "엠케이전력(선원동)", contacts: [{n: "김상대 과장", p: "010-8602-2179"}], addr: "전남 여수시 화산로 122" },
+    { short: "화성", name: "화성전력", contacts: [{n: "장완 대표", p: "010-3643-2691"}], addr: "전남 여수시 미평로 33-2" },
+    { short: "금성", name: "금성소방", contacts: [{n: "손지민 대리", p: "010-4558-0978"}], addr: "전남 여수시 신기북4길 16" },
+    { short: "대성", name: "대성소방", contacts: [{n: "사무실", p: "061-683-4417"}], addr: "전남 여수시 신기북2길 15" },
+    { short: "마루", name: "마루소방", contacts: [{n: "홍경범 대표", p: "010-2972-4633"}], addr: "전남 여수시 미평남2길 2" },
+    { short: "세진", name: "세진계전", contacts: [{n: "장동기 부장", p: "010-5690-5904"}], addr: "전남 여수시 성산6길 27-4" },
+    { short: "아진", name: "아진전력", contacts: [{n: "장찬명 과장", p: "010-8616-6784"}], addr: "전남 여수시 여수산단로 282" },
+    { short: "일광", name: "일광전기", contacts: [{n: "장재호 소장", p: "010-3645-4512"}, {n: "이성자 대표", p: "010-7355-4408"}], addr: "전남 여수시 소라면 조산로 288" },
+    { short: "태광", name: "태광계전", contacts: [{n: "정광호 부장", p: "010-7581-5337"}], addr: "전남 여수시 덕양삼거리길 25" },
+    { short: "엑스", name: "엑스포전력", contacts: [{n: "박원준 부장", p: "010-8556-5587"}], addr: "전남 여수시 주삼덕양로 68" },
+    { short: "한솔", name: "한솔산전", contacts: [{n: "김재운 대표", p: "010-3641-7887"}], addr: "전남 여수시 소호2길 5-4" },
+    { short: "소원", name: "소원전력", contacts: [{n: "임충식 대표", p: "010-3621-8740"}], addr: "전남 여수시 통천길 26-14" },
+    { short: "명성", name: "명성전기", contacts: [{n: "서진호 대표", p: "010-9884-3369"}], addr: "전남 여수시 무선5길 6" },
+    { short: "한려", name: "한려이엔지", contacts: [{n: "박문수 대표", p: "010-6652-0115"}], addr: "전남 여수시 동문로 83-1" },
+    { short: "은성", name: "은성계전", contacts: [{n: "박종호 대표", p: "010-4458-8626"}], addr: "전남 여수시 화양로 1591-1" },
+    { short: "조영", name: "조영", contacts: [{n: "김경진 대표", p: "010-2168-2384"}], addr: "전남 여수시 화산1길 52" },
+    { short: "영동", name: "영동이엔씨", contacts: [{n: "사무실", p: "061-652-8881"}], addr: "전남 여수시 봉계6길 12-1" },
+    { short: "알파", name: "알파이앤시", contacts: [{n: "김승현 팀장", p: "010-9095-0175"}], addr: "전남 여수시 망양로 1244" },
+    { short: "국제", name: "국제전기", contacts: [{n: "김문수 이사", p: "010-6346-2111"}], addr: "전남 여수시 여순로 163" },
+    { short: "제일", name: "제일전기공사", contacts: [{n: "대표", p: "010-9115-4708"}], addr: "전남 여수시 신기북2길 5" },
+    { short: "한화", name: "한화에너지", contacts: [{n: "송동준", p: "010-9210-5750"}], addr: "전남 여수시 산단중앙로 145" },
+    { short: "이피", name: "이피테크", contacts: [{n: "사무실", p: "061-686-7790"}, {n: "주정국 이사", p: "010-6803-6259"}], addr: "전남 여수시 상암로 169-1" },
+    { short: "삼광", name: "삼광전력", contacts: [{n: "대표", p: "010-9579-5678"}], addr: "전남 여수시 장개재길 32" },
+    { short: "에스", name: "에스더블유", contacts: [{n: "류문선 이사", p: "010-6614-8792"}], addr: "전남 여수시 성사로 17" },
+    { short: "두리", name: "두리이앤지", contacts: [{n: "대표", p: "010-6617-1317"}], addr: "전남 여수시 대통3길 38" },
+    { short: "조은", name: "조은전력", contacts: [{n: "강민수 과장", p: "010-3442-3449"}], addr: "전남 여수시 화양면 나진길 46" },
+    { short: "진영", name: "진영전력", contacts: [{n: "사무실", p: "061-651-6031"}], addr: "전남 여수시 문수로 91" },
+    { short: "명가", name: "명가하우징", contacts: [{n: "박형우 대표", p: "010-7648-8741"}], addr: "전남 여수시 미평3길 48" },
+    { short: "제이", name: "제이티전력", contacts: [{n: "김성균 대표", p: "010-7103-5436"}], addr: "전남 여수시 미평6길 15-2" },
+    { short: "나진", name: "나진전기", contacts: [{n: "사무실", p: "061-685-6787"}], addr: "전남 여수시 새터로 73" },
+    { short: "범우", name: "범우이앤씨", contacts: [{n: "김동현 차장", p: "010-5758-5079"}], addr: "전남 여수시 성산로 47" },
+    { short: "한길", name: "한길전력", contacts: [{n: "사무실", p: "061-641-1177"}], addr: "전남 여수시 소호관기로 140" },
+    { short: "융창", name: "융창이엔지", contacts: [{n: "서태현 대표", p: "010-2031-1036"}], addr: "전남 여수시 신기북2길 9" },
+    { short: "금호", name: "금호소방", contacts: [{n: "사무실", p: "061-684-2990"}], addr: "전남 여수시 쌍봉로 135" },
+    { short: "동우", name: "동우전력", contacts: [{n: "사무실", p: "061-691-9982"}], addr: "전남 여수시 좌수영로 1160" },
+    { short: "부림", name: "부림전기", contacts: [{n: "사무실", p: "061-684-5776"}], addr: "전남 여수시 주동1길 27-8" },
+    { short: "딘스", name: "딘스텔엔지니어링", contacts: [{n: "김태진 이사", p: "010-8616-4777"}], addr: "전남 여수시 학동5길 13" },
+    { short: "케이", name: "케이에프시스템", contacts: [{n: "사무실", p: "061-681-6426"}], addr: "전남 여수시 화양면 화양로 1591-1" },
+    { short: "전기", name: "전기안전서비스", contacts: [{n: "사무실", p: "061-686-5825"}], addr: "전남 여수시 성산2길 14-12" },
+    { short: "엑스", name: "엑스포(금호폴리켐)", contacts: [{n: "담당자", p: "010-8556-5587"}], addr: "전남 여수시 산단중앙로 613" },
+    { short: "이피", name: "이피테크(롯데첨단)", contacts: [{n: "주정국 이사", p: "010-6803-6259"}], addr: "전남 여수시 여수산단로 334-27" },
+    { short: "경우", name: "경우전력", contacts: [{n: "윤미점 이사", p: "010-8876-6078"}, {n: "사무실", p: "061-643-0433"}], addr: "전남 여수시 신월로 759-1" },
+    { short: "제일", name: "제일소방전기", contacts: [{n: "안영삼 부장", p: "010-6585-0303"}], addr: "경남 진주시 문산읍 동부로 386-1" },
+    { short: "엔에", name: "엔에스전기", contacts: [{n: "문덕기 이사", p: "010-3842-7745"}], addr: "경남 진주시 금산로 249번길 53" },
+    { short: "엔에", name: "엔에스전기(웅천)", contacts: [{n: "최원일 소장", p: "010-2607-0219"}], addr: "전남 여수시 웅천동 1701" },
+    { short: "예스", name: "예스정보통신", contacts: [{n: "사무실", p: "055-763-3838"}], addr: "경남 진주시 서장대로 393번길 14" },
+    { short: "대지", name: "대지정보통신", contacts: [{n: "대표", p: "010-4243-0826"}], addr: "경남 진주시 돗골로 20번길 15" },
+    { short: "진주", name: "진주정보통신", contacts: [{n: "대표", p: "010-3563-5430"}], addr: "경남 진주시 모덕로277번길 22" },
+    { short: "대영", name: "대영전설", contacts: [{n: "정명래 부장", p: "010-2008-2050"}], addr: "경남 진주시 화개길 194번길 129-10" },
+    { short: "태경", name: "태경전기", contacts: [{n: "박광요 소장", p: "010-9474-0866"}, {n: "박영근 이사", p: "010-7112-1248"}], addr: "경남 진주시 말티고개로 50" },
+    { short: "태경", name: "태경전기(김해)", contacts: [{n: "박광요 소장", p: "010-9474-0866"}], addr: "경남 김해시 진영읍 여래리 4" },
+    { short: "파워", name: "파워전력", contacts: [{n: "사무실", p: "055-755-1238"}], addr: "경남 진주시 내동면 신율길 127" },
+    { short: "에스", name: "에스에스전기조명", contacts: [{n: "대표", p: "010-5050-8884"}], addr: "경남 진주시 명석면 나불로 215-26" },
+    { short: "신라", name: "신라테크원", contacts: [{n: "대표", p: "010-3882-6215"}], addr: "경남 진주시 문산읍 삼곡길 12-3" },
+    { short: "대한", name: "대한전기소방", contacts: [{n: "사무실", p: "055-746-1577"}], addr: "경남 진주시 유곡죽전길 5" },
+    { short: "세기", name: "세기", contacts: [{n: "사무실", p: "055-753-3198"}], addr: "경남 진주시 정촌면 삼일로106번길 9-20" },
+    { short: "부흥", name: "부흥전기소방공사", contacts: [{n: "노종성 상무", p: "010-3573-3252"}, {n: "사무실", p: "055-762-8797"}], addr: "경남 진주시 정촌면 화개천로54번길 57" },
+    { short: "대경", name: "대경전기", contacts: [{n: "대표", p: "010-3839-1479"}], addr: "경남 진주시 진산로 409" },
+    { short: "가야", name: "가야건업", contacts: [{n: "신영웅 이사", p: "010-5164-5635"}], addr: "경남 진주시 금산로 중천로7번길 5-2" },
+    { short: "남부", name: "남부전기", contacts: [{n: "서인태 부장", p: "010-5050-8884"}], addr: "경남 사천시 주공1길 23" },
+    { short: "국제", name: "국제전기조명공사", contacts: [{n: "김정현 대표", p: "010-5237-7629"}], addr: "경남 사천시 향촌동 228-1" },
+    { short: "해성", name: "해성전기건설", contacts: [{n: "대표", p: "010-9392-5767"}], addr: "경남 사천시 곤명면 정곡리939-7" },
+    { short: "해성", name: "해성전기건설(여수해양)", contacts: [{n: "대표", p: "010-9392-5767"}, {n: "부장", p: "010-9365-5767"}], addr: "전남 여수시 신추길 54" },
+    { short: "에이", name: "에이원전력", contacts: [{n: "강호재 대표", p: "010-2002-9400"}], addr: "경남 사천시 동문2길 181" },
+    { short: "성민", name: "성민전력", contacts: [{n: "대표", p: "010-3860-1143"}, {n: "사무실", p: "055-882-4790"}], addr: "경남 하동군 공설운동장로 183-22" },
+    { short: "강산", name: "강산전기", contacts: [{n: "사무실", p: "055-884-7824"}], addr: "경남 하동군 하동읍 210-1" },
+    { short: "삼화", name: "삼화전기", contacts: [{n: "사무실", p: "055-884-3372"}], addr: "경남 하동군 고전면 사막2길 9" },
+    { short: "이성", name: "이성정보통신", contacts: [{n: "대표", p: "010-8507-3941"}], addr: "경남 의령군 의령읍 벽화로8길 16" },
+    { short: "현대", name: "현대전기공사", contacts: [{n: "대표", p: "010-3862-6787"}], addr: "경남 의령군 의령읍 의병로 19길 5-1" },
+    { short: "우리", name: "우리이엔씨", contacts: [{n: "최진혁 이사", p: "010-9995-6568"}], addr: "전남 광양시 서평9길 20" },
+    { short: "청우", name: "청우전기", contacts: [{n: "김선태 소장", p: "010-7616-8795"}], addr: "전남 광양시 제철로 997-28" },
+    { short: "청우", name: "청우전기(구봉산)", contacts: [{n: "서용민 소장", p: "010-2996-0529"}], addr: "전남 광양시 구봉산전망대길 155" },
+    { short: "해창", name: "해창이엔씨", contacts: [{n: "양경용 팀장", p: "010-3606-8583"}], addr: "전남 광양시 길호5길 9" },
+    { short: "딘스", name: "딘스텔엔지니어링(중동)", contacts: [{n: "강기표 과장", p: "010-8147-4133"}], addr: "전남 광양시 중동 308-114" },
+    { short: "대일", name: "대일소방", contacts: [{n: "사무실", p: "061-793-1198"}], addr: "전남 광양시 눈소5길 55-5" },
+    { short: "문경", name: "문경전력", contacts: [{n: "이원배 이사", p: "010-4607-2046"}], addr: "전남 광양시 용강2길 9-7" },
+    { short: "지엔", name: "지엔비테크", contacts: [{n: "허성구 소장", p: "010-9442-5617"}], addr: "전남 광양시 광양읍 유당로 152" },
+    { short: "동신", name: "동신", contacts: [{n: "사무실", p: "061-791-4001"}], addr: "전남 광양시 눈소2길 15" },
+    { short: "서전", name: "서전전력", contacts: [{n: "안재성 대표", p: "010-8551-2727"}], addr: "전남 광양시 광양읍 서평1길 99" },
+    { short: "유에", name: "유에스에너지", contacts: [{n: "김재민 대표", p: "010-2332-1793"}], addr: "전남 광양시 익신산단1길 10-25" },
+    { short: "예일", name: "예일종합이엔씨", contacts: [{n: "문병대 대표", p: "010-4626-2326"}], addr: "전남 광양시 광양읍 대림오성로 74" },
+    { short: "광양", name: "광양이엔씨", contacts: [{n: "정용준 소장", p: "010-2955-5224"}, {n: "대표", p: "010-5611-7800"}], addr: "전남 광양시 태인5길 46" },
+    { short: "하나", name: "하나전기계전", contacts: [{n: "이후근 대표", p: "010-3622-7290"}], addr: "전남 광양시 성북길 32-1" },
+    { short: "화신", name: "화신전력", contacts: [{n: "김현성 대표", p: "010-4620-2190"}], addr: "전남 광양시 마동 1023-2" },
+    { short: "현대", name: "현대종합상사", contacts: [{n: "사무실", p: "061-772-8878"}], addr: "전남 광양시 옥곡면 신금산단4길 25" },
+    { short: "아주", name: "아주전력", contacts: [{n: "황선호 이사", p: "010-3616-1474"}], addr: "전남 광양시 광양읍 서평6길 26" },
+    { short: "우성", name: "우성이앤지", contacts: [{n: "사무실", p: "061-727-8204"}], addr: "전남 광양시 광영동 새미골1길" },
+    { short: "파라", name: "파라곤", contacts: [{n: "방기종 전무", p: "010-6355-2744"}], addr: "전남 광양시 등논3길 9-9" },
+    { short: "석경", name: "석경이엔지", contacts: [{n: "조영남 대표", p: "010-3628-5840"}], addr: "전남 광양시 영수길 8" },
+    { short: "장원", name: "장원엔지니어링", contacts: [{n: "사무실", p: "061-772-1908"}], addr: "전남 광양시 옥곡면 장동길 22-1" },
+    { short: "하나", name: "하나시스템", contacts: [{n: "황의환 대표", p: "010-4617-5320"}], addr: "전남 광양시 중동1길 22" },
+    { short: "청원", name: "청원전기(광양)", contacts: [{n: "서인재 대표", p: "010-4620-1428"}], addr: "전남 광양시 시청로 1" },
+    { short: "서광", name: "서광텔레콤", contacts: [{n: "대표", p: "010-3609-4503"}], addr: "전남 광양시 중마용소길 60" },
+    { short: "동방", name: "동방이앤씨", contacts: [{n: "우정근 대표", p: "010-4624-1561"}], addr: "전남 광양시 옥룡면 석곡길 9-32" },
+    { short: "씨엠", name: "씨엠파워", contacts: [{n: "이슬희 과장", p: "010-3009-2146"}], addr: "전남 광양시 광양읍 동주2길 30-16" },
+    { short: "신한", name: "신한이엔에스", contacts: [{n: "박덕호 이사", p: "010-2617-7955"}], addr: "전남 광양시 도촌길 13-23" },
+    { short: "대한", name: "대한산업공사", contacts: [{n: "사무실", p: "061-751-6955"}], addr: "전남 순천시 원가곡3길 6-15" },
+    { short: "동광", name: "동광이앤지", contacts: [{n: "대표", p: "010-3626-3660"}, {n: "최성욱 부장", p: "010-9908-6755"}], addr: "전남 순천시 망산1길 26" },
+    { short: "호경", name: "호경", contacts: [{n: "조용오 대표", p: "010-9442-7511"}], addr: "전남 순천시 원연향길 109" },
+    { short: "삼오", name: "삼오전기", contacts: [{n: "대표", p: "010-3612-1300"}], addr: "전남 순천시 해비치1길 40" },
+    { short: "갑을", name: "갑을전력", contacts: [{n: "채해석 대표", p: "010-6647-8502"}], addr: "전남 순천시 해광로 410" },
+    { short: "국일", name: "국일전력", contacts: [{n: "사무실", p: "061-725-3115"}, {n: "정은효 전무", p: "010-3641-8574"}], addr: "전남 순천시 율산길 106" },
+    { short: "무창", name: "무창전력", contacts: [{n: "배석종 이사", p: "010-6618-8881"}], addr: "전남 순천시 장평4길" },
+    { short: "삼성", name: "삼성소방공사", contacts: [{n: "사무실", p: "061-741-7119"}], addr: "전남 순천시 압곡길 115-109" },
+    { short: "창대", name: "창대이엔씨", contacts: [{n: "김종현 이사", p: "010-7674-9549"}], addr: "전남 순천시 선평길 29" },
+    { short: "이정", name: "이정", contacts: [{n: "나성호 대표", p: "010-5622-7297"}], addr: "전남 순천시 가곡3길 11" },
+    { short: "세현", name: "세현", contacts: [{n: "사무실", p: "061-727-5947"}, {n: "윤대호 과장", p: "010-3890-4133"}], addr: "전남 순천시 발흥길 16" },
+    { short: "중앙", name: "중앙이앤지", contacts: [{n: "사무실", p: "061-752-2020"}], addr: "전남 순천시 가곡2길 5" },
+    { short: "청원", name: "청원전기(순천)", contacts: [{n: "서인재 대표", p: "010-4620-1428"}], addr: "전남 순천시 상사면 오실길 43" },
+    { short: "중앙", name: "중앙방재", contacts: [{n: "서인영 대표", p: "010-9866-9713"}], addr: "전남 순천시 고지5길 14-6" },
+    { short: "일신", name: "일신테크", contacts: [{n: "권정수 대표", p: "010-7610-3996"}], addr: "전남 순천시 서면 화정1길 22" },
+    { short: "강주", name: "강주", contacts: [{n: "김사영 이사", p: "010-6345-3543"}], addr: "전남 순천시 백강로 486" },
+    { short: "국제", name: "국제이앤씨", contacts: [{n: "사무실", p: "061-753-1401"}, {n: "오병록 대리", p: "010-4166-1639"}], addr: "전남 순천시 지본금평길 18" },
+    { short: "디유", name: "디유파워", contacts: [{n: "정장균 대표", p: "010-3640-3642"}], addr: "전남 순천시 신풍길 16" },
+    { short: "두산", name: "두산전력", contacts: [{n: "사무실", p: "061-745-5453"}], addr: "전남 순천시 환선로 54-1" },
+    { short: "그린", name: "그린소방", contacts: [{n: "정보없음", p: ""}], addr: "전남 순천시 중앙로 491-24" },
+    { short: "태산", name: "태산전기", contacts: [{n: "사무실", p: "061-753-9961"}], addr: "전남 순천시 서면 산단2길 25" },
+    { short: "에스", name: "에스디", contacts: [{n: "김광오 이사", p: "010-2655-4859"}], addr: "전남 순천시 백강로 617" },
+    { short: "올디", name: "올디자인솔루션", contacts: [{n: "고으뜸 대표", p: "010-9141-9990"}], addr: "전남 순천시 율촌산단1로 80-35" },
+    { short: "아이", name: "아이티이앤씨", contacts: [{n: "사무실", p: "061-721-6573"}], addr: "전남 순천시 해룡면 용전1길 40-1" },
+    { short: "우영", name: "우영전력", contacts: [{n: "김승빈 대표", p: "010-9432-9021"}], addr: "전남 순천시 민속마을길 502-25" },
+    { short: "현광", name: "현광엔지니어링", contacts: [{n: "최영호 상무", p: "010-2625-5251"}], addr: "전남 순천시 해룡면 용전길 43" },
+    { short: "광진", name: "광진케이블", contacts: [{n: "정보없음", p: ""}], addr: "부산시 남구 신선로 259-16" },
+    { short: "씨엠", name: "씨엠파워(해남)", contacts: [{n: "담당자", p: "010-3634-4069"}], addr: "전남 해남군 해남읍 중앙2로 100-1" },
+    { short: "세진", name: "세진계전(한화)", contacts: [{n: "임채근 소장", p: "010-8505-8085"}], addr: "전남 여수시 신월로 413" },
+    { short: "대호", name: "대호전기공사", contacts: [{n: "대표", p: "010-4545-5117"}], addr: "경남 사천시 서향안길 75" },
+    { short: "한려", name: "한려이엔지(여수중)", contacts: [{n: "박문수 대표", p: "010-6652-0115"}], addr: "전남 여수시 공화북4길 19-1" },
+    { short: "대방", name: "대방지", contacts: [{n: "박장진", p: ""}], addr: "경남 의령군 정곡면 법정로5길 67-2" },
+    { short: "동부", name: "동부이엔씨(현장)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}], addr: "전남 광양시 광양읍 예구6길 21" },
+    { short: "쌍용", name: "쌍용전력(자택)", contacts: [{n: "김천종 소장", p: "010-5608-3602"}], addr: "전남 여수시 소라면 서부로 192-34" },
+    { short: "동우", name: "동우전력(동성)", contacts: [{n: "김옥만 이사", p: "010-2605-7492"}, {n: "신창호 부장", p: "010-2000-1884"}], addr: "전남 여수시 여수산단2로 223-40" },
+    { short: "석광", name: "석광아이티에스", contacts: [{n: "사무실", p: "055-758-0326"}], addr: "경남 진주시 연꽃로 165번길 57" },
+    { short: "석광", name: "석광아이티에스(현장)", contacts: [{n: "주성철 담당자", p: "010-9205-0884"}], addr: "경남 진주시 충무공동 184" },
+    { short: "알파", name: "알파이앤시(힐스2)", contacts: [{n: "담당자", p: "010-7322-0444"}], addr: "전남 여수시 박람회길 81" },
+    { short: "서전", name: "서전전력(해룡)", contacts: [{n: "안재성 대표", p: "010-8551-2727"}], addr: "전남 순천시 해룡면 호두길 79-59" },
+    { short: "무창", name: "무창전력(현장)", contacts: [{n: "김남훈 차장", p: "010-8607-5896"}], addr: "전남 순천시 성죽길 53" },
+    { short: "도일", name: "도일(사무실)", contacts: [{n: "김도은", p: ""}], addr: "전남 여수시 율촌면 율촌로 83-1" },
+    { short: "도일", name: "도일(벌교)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}], addr: "전남 보성군 벌교읍 회정리 474" },
+    { short: "시에", name: "시에스이엔아이", contacts: [{n: "김철수 대표", p: "010-5680-3703"}, {n: "전주림", p: "010-4543-9951"}], addr: "전남 여수시 상암로 581" },
+    { short: "동부", name: "동부이엔씨(사무실)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}, {n: "남영미 이사", p: "010-3074-4720"}], addr: "전남 광양시 광양읍 예구6길 21" },
+    { short: "동부", name: "동부이엔씨(벌교)", contacts: [{n: "임병선 소장", p: "010-8601-8057"}, {n: "남영미 이사", p: "010-3074-4720"}], addr: "전남 보성군 벌교읍 회정리 474" },
+    { short: "이피", name: "이피테크(낙포부두)", contacts: [{n: "용철 대표", p: "010-6808-0994"}], addr: "전남 여수시 낙포동 197-35" },
+    { short: "한솔", name: "한솔전기", contacts: [{n: "정보없음", p: ""}], addr: "부산시 사상구 낙동대로 1048번길 22" },
+    { short: "동광", name: "동광이엔지(관리)", contacts: [{n: "윤점숙", p: "061-751-0091"}], addr: "전남 순천시 망산1길 26" },
+    { short: "성신", name: "성신이엔씨", contacts: [{n: "김도은 실장", p: "010-7556-0000"}, {n: "사무실", p: "061-751-5511"}], addr: "전남 광양시 광양읍 인덕로 967-1" },
+    { short: "에스", name: "에스알이엔지", contacts: [{n: "김청수 부장", p: "010-8611-7617"}, {n: "사무실", p: "061-723-1000"}], addr: "전남 순천시 해룡면 해룡산단6로 108" },
+    { short: "세양", name: "세양케이블판매", contacts: [{n: "사무실", p: "051-323-0061"}], addr: "부산시 사상구 학장동 274-6" },
+    { short: "태진", name: "태진전기", contacts: [{n: "대표번호", p: "1661-4602"}], addr: "전남 광양시 옥곡면 신금산단5길 70-31" },
+    { short: "충전", name: "부산문화회관(충전)", contacts: [{n: "전기차 충전", p: ""}], addr: "부산시 남구 유엔평화로 76번길 1" },
+    { short: "포스", name: "포스솔루션(공장)", contacts: [{n: "안동준 부장", p: "010-7100-6199"}, {n: "사무실", p: "061-795-1211"}], addr: "전남 광양시 옥곡면 강변로 217" },
+    { short: "포스", name: "포스솔루션(사무실)", contacts: [{n: "안동준 부장", p: "010-7100-6199"}, {n: "사무실", p: "061-795-1211"}], addr: "전남 광양시 중마로 21" },
+    { short: "해창", name: "해창이엔씨(제철로)", contacts: [{n: "김지호 리더", p: "010-7929-1469"}], addr: "전남 광양시 제철로 1800" },
+    { short: "대우", name: "대우비엔알", contacts: [{n: "사무실 정보없음", p: ""}], addr: "전남 광양시 제철로 1410" },
+    { short: "성신", name: "성신이엔씨(산단문)", contacts: [{n: "안인태 소장", p: "010-4788-4553"}, {n: "정민호 과장", p: "010-3870-4721"}], addr: "전남 광양시 산업로 231" },
+    { short: "성신", name: "성신이엔씨(기자재)", contacts: [{n: "안인태 소장", p: "010-4788-4553"}, {n: "정민호 과장", p: "010-3870-4721"}], addr: "전남 광양시 제철로 1704" },
+    { short: "동신", name: "동신(도이야적장)", contacts: [{n: "김만곤 부장", p: "010-4622-2220"}, {n: "강민수 과장", p: "010-4081-1083"}], addr: "전남 광양시 도이동 483-5" },
+    { short: "기경", name: "기경(여수현장)", contacts: [{n: "김경환 소장", p: "010-3622-5330"}], addr: "전남 여수시 선소마을길 9" },
+    { short: "기경", name: "기경(사무실)", contacts: [{n: "김영호 부장", p: "010-5048-4605"}, {n: "사무실", p: "061-763-0485"}], addr: "전남 광양시 서천1길 70-5" },
+    { short: "기경", name: "기경(성황초)", contacts: [{n: "곽도훈", p: "010-5607-7082"}, {n: "성용강", p: "010-8585-3692"}], addr: "전남 광양시 지동길 15" },
+    { short: "엠에", name: "엠에스피", contacts: [{n: "김진경 차장", p: "010-3353-3582"}, {n: "사무실", p: "055-854-6519"}], addr: "경남 사천시 사천읍 방곡길 20" },
+    { short: "우양", name: "우양이엔지", contacts: [{n: "사무실", p: "061-811-2581"}], addr: "전남 순천시 상사면 오실길 54" },
+    { short: "태성", name: "태성계전", contacts: [{n: "차대웅 이사", p: "010-4490-3979"}, {n: "사무실", p: "061-724-3837"}], addr: "전남 순천시 해룡면 월전길 3" },
+    { short: "파워", name: "파워엔지니어링", contacts: [{n: "박인호 대표", p: "010-4532-5298"}, {n: "조호성 차장", p: "010-2662-0281"}], addr: "전남 광양시 광양읍 익신산단1길 50" },
+    { short: "화성", name: "화성전력(엑스포)", contacts: [{n: "장준수 과장", p: "010-9403-2691"}], addr: "전남 여수시 덕충동 1998-1" },
+    { short: "우리", name: "우리통신", contacts: [{n: "전석 대표", p: "010-4599-4258"}, {n: "오진희 과장", p: "010-2889-0285"}], addr: "전남 순천시 고지4길 11-50" },
+    { short: "메가", name: "메가전력", contacts: [{n: "강효원 소장", p: "010-6648-7184"}, {n: "사무실", p: "061-727-0366"}], addr: "전남 순천시 북정2길 5" },
+    { short: "메가", name: "메가전력(곡성현장)", contacts: [{n: "강효원 소장", p: "010-6648-7184"}, {n: "사무실", p: "061-727-0366"}], addr: "전남 곡성군 옥과면 미술관로 288" },
+    { short: "세아", name: "세아앰앤에스", contacts: [{n: "오재관 이사", p: "010-8221-3015"}], addr: "전남 여수시 산단중앙로 188" },
+    { short: "충전", name: "우암동행정복지센터", contacts: [{n: "전기차 충전소", p: ""}], addr: "부산시 남구 동제당로 368" }
+];
 
-    // 지도 기본 설정 (광양/여수/순천 중심부)
-    var map = new naver.maps.Map('map', {
-        center: new naver.maps.LatLng(34.85, 127.70),
-        zoom: 10
-    });
+var map = new naver.maps.Map('map', { center: new naver.maps.LatLng(34.85, 127.70), zoom: 11 });
+var markers = [];
+var infoWindows = [];
+var myLocationMarker = null;
 
-    var infowindow = new naver.maps.InfoWindow({
-        zIndex: 1000,
-        maxWidth: 250,
-        borderWidth: 1,
-        borderColor: "#2db400"
-    });
+function makeContactHtml(contacts) {
+    return contacts.map(c => `
+        <div class="contact-item">
+            <span class="contact-name">${c.n}</span>
+            ${c.p ? `<a href="tel:${c.p}" class="tel-link">${c.p}</a>` : `<span style="color:#ccc; font-size:12px;">번호없음</span>`}
+        </div>
+    `).join('');
+}
 
-    // 주소 -> 좌표 변환 및 마커 생성 로직
-    locations.forEach(function(item) {
+function initMarkers() {
+    businessData.forEach(function(item) {
         naver.maps.Service.geocode({ query: item.addr }, function(status, response) {
-            if (status !== naver.maps.Service.Status.OK || response.v2.addresses.length === 0) {
-                console.log("변환 실패 주소: ", item.addr);
-                return;
-            }
-            
+            if (status !== naver.maps.Service.Status.OK || response.v2.addresses.length === 0) return;
             var res = response.v2.addresses[0];
             var point = new naver.maps.LatLng(res.y, res.x);
-            
-            // 주소에서 '시/군/구 동/면'까지만 추출하여 마커 아래 표시
-            var addrShort = item.addr.split(' ').slice(1, 3).join(' ');
-
             var marker = new naver.maps.Marker({
-                position: point,
-                map: map,
-                icon: {
-                    content: `
-                        <div class="custom-marker">
-                            <div class="marker-label">${item.short}</div>
-                            <div class="marker-addr-label">${addrShort}</div>
-                        </div>`,
-                    anchor: new naver.maps.Point(30, 15)
-                }
+                position: point, map: map,
+                icon: { content: '<div class="custom-marker">' + item.short + '</div>', anchor: new naver.maps.Point(15, 15) }
             });
 
-            // 마커 클릭시 상세 정보 표시
-            naver.maps.Event.addListener(marker, "click", function() {
-                var contactHtml = item.contacts.map(c => `
-                    <div class="tel-box">
-                        <span style="font-size:11px; color:#666;">${c.n}</span><br>
-                        ${c.p ? `<a href="tel:${c.p}" class="tel-link">${c.p}</a>` : '<span style="color:#999;font-size:13px;">번호없음</span>'}
-                    </div>
-                `).join('');
-
-                var contentString = `
+            var infowindow = new naver.maps.InfoWindow({
+                content: `
                     <div class="info-window">
-                        <span class="info-title">${item.name}</span>
-                        <div style="font-size:12px; color:#444; margin-bottom:10px;">${item.addr}</div>
-                        <span class="info-nav-link" onclick="window.location.href='nmap://navigation?dlat=${res.y}&dlng=${res.x}&dname=${encodeURIComponent(item.name)}&appname=mymap'">📍 네비게이션(앱) 실행</span>
-                        ${contactHtml}
-                    </div>`;
+                        <div class="close-window-btn" onclick="closeAllInfo()">×</div>
+                        <div class="info-title">${item.name}</div>
+                        <div class="contact-list">${makeContactHtml(item.contacts)}</div>
+                        <div class="addr-text" onclick="window.copyAddr('${item.addr}')">📋 주소 복사</div>
+                        <button class="navi-btn" onclick="window.startNavi('${res.x}', '${res.y}', '${item.name}')">카카오내비 길안내</button>
+                    </div>`,
+                borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -10)
+            });
 
-                infowindow.setContent(contentString);
+            naver.maps.Event.addListener(marker, "click", function() {
+                closeAllInfo();
                 infowindow.open(map, marker);
             });
+            markers.push({ mObj: marker, searchString: (item.name + item.short + item.addr).toLowerCase() });
+            infoWindows.push(infowindow);
         });
     });
+}
 
-    // 내 위치 표시 (실시간)
-    var myMarker = new naver.maps.Marker({
-        map: map,
-        icon: { content: '<div class="my-loc"></div>', anchor: new naver.maps.Point(8, 8) }
+function closeAllInfo() { infoWindows.forEach(iw => iw.close()); }
+
+function doSearch() {
+    closeAllInfo();
+    var val = document.getElementById('search-input').value.trim().toLowerCase();
+    if (!val) { markers.forEach(m => m.mObj.setMap(map)); return; }
+    var keywords = val.split('.').map(k => k.trim()).filter(k => k.length > 0);
+    markers.forEach(function(m) {
+        var isMatch = keywords.some(k => m.searchString.indexOf(k) !== -1);
+        m.mObj.setMap(isMatch ? map : null);
     });
+}
 
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(function(pos) {
-            var curr = new naver.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-            myMarker.setPosition(curr);
-        }, null, { enableHighAccuracy: true });
-    }
+function findMyLocation() {
+    if (!navigator.geolocation) { alert("위치 기능을 사용할 수 없습니다."); return; }
+    navigator.geolocation.getCurrentPosition(function(position) {
+        var lat = position.coords.latitude;
+        var lng = position.coords.longitude;
+        var currentPos = new naver.maps.LatLng(lat, lng);
+        if (!myLocationMarker) {
+            myLocationMarker = new naver.maps.Marker({
+                position: currentPos, map: map,
+                icon: { content: '<div class="my-location-marker"></div>', anchor: new naver.maps.Point(11, 11) },
+                zIndex: 100
+            });
+        } else { myLocationMarker.setPosition(currentPos); }
+        map.panTo(currentPos);
+        if (map.getZoom() < 14) map.setZoom(14);
+    }, function() { alert("위치 정보를 가져올 수 없습니다."); }, { enableHighAccuracy: false, timeout: 8000 });
+}
+
+window.copyAddr = function(text) {
+    var t = document.createElement("textarea"); document.body.appendChild(t); t.value = text; t.select();
+    document.execCommand('copy'); document.body.removeChild(t);
+    alert("주소가 복사되었습니다.");
+};
+
+window.startNavi = function(x, y, name) {
+    location.href = "nmap://navigation?dlat=" + y + "&dlng=" + x + "&dname=" + encodeURIComponent(name) + "&appname=heoara-odd.github.io";
+};
+
+naver.maps.Event.once(map, 'init_stylemap', function() { initMarkers(); });
+
+document.getElementById('search-btn').onclick = doSearch;
+document.getElementById('close-btn').onclick = closeAllInfo;
+document.getElementById('reset-btn').onclick = function() { document.getElementById('search-input').value = ""; closeAllInfo(); doSearch(); };
+document.getElementById('mylocation-btn').onclick = findMyLocation;
+document.getElementById('search-input').onkeypress = function(e) { if (e.keyCode == 13) doSearch(); };
 </script>
 </body>
 </html>
