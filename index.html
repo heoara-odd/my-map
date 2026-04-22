@@ -272,12 +272,17 @@ function initMarkers() {
                 icon: { content: '<div class="custom-marker">' + item.short + '</div>', anchor: new naver.maps.Point(15, 15) }
             });
 
-            var infowindow = new naver.maps.InfoWindow({
+           var infowindow = new naver.maps.InfoWindow({
                 content: `
                     <div class="info-window">
                         <div class="close-window-btn" onclick="closeAllInfo()">×</div>
                         <div class="info-title">${item.name}</div>
                         <div class="contact-list">${makeContactHtml(item.contacts)}</div>
+                        
+                        <div style="font-size: 12px; color: #333; background: #f0f0f0; padding: 8px; border-radius: 5px; margin-bottom: 5px; word-break: keep-all;">
+                            ${item.addr}
+                        </div>
+
                         <div class="addr-text" onclick="window.copyAddr('${item.addr}')">📋 주소 복사</div>
                         <button class="navi-btn" onclick="window.startNavi('${res.x}', '${res.y}', '${item.name}')">카카오내비 길안내</button>
                     </div>`,
