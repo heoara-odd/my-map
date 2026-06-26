@@ -357,10 +357,14 @@ function initMarkers() {
 
 // 상단 검색 기능 정의
 function searchBusiness() {
-    var keyword = document.getElementById('search-input').value.trim().toLowerCase();
+    var rawInput = document.getElementById('search-input').value.trim().toLowerCase();
     
-    // 변경된 부분: 검색어가 없거나 2글자 미만인 경우 제한
-    if (keyword.length < 2) {
+    // 1. 마침표(.)를 기준으로 검색어를 나누고, 각 단어의 앞뒤 공백을 제거한 뒤, 빈 단어는 제외합니다.
+    var keywords = rawInput.split('.').map(function(k) { return k.trim(); }).filter(function(k) { return k.length > 0; });
+    
+    // 2. 유효한 검색어가 없거나, 전체 입력 글자 수가 2글자 미만인 경우 제한
+    // (예: 단일 검색어 1글자 제한 유지 및 마침표만 입력한 경우 방지)
+    if (keywords.length === 0 || rawInput.length < 2) {
         alert('검색어는 최소 두 글자 이상 입력해 주세요.');
         return;
     }
@@ -370,8 +374,21 @@ function searchBusiness() {
     
     markers.forEach(function(marker, index) {
         var info = marker.get('businessInfo');
-        if (info.name.toLowerCase().includes(keyword) || info.addr.toLowerCase().includes(keyword) || info.short.toLowerCase().includes(keyword)) {
+        var nameAttr = info.name.toLowerCase();
+        var addrAttr = info.addr.toLowerCase();
+        var shortAttr = info.short.toLowerCase();
+        
+        // 3. 입력된 여러 검색어(keywords) 중 하나라도 일치하는 게 있는지 검사 (OR 조건)
+        var isMatch = keywords.some(function(keyword) {
+            // 개별 검색어가 너무 짧은 경우(예: 실수로 입력된 공백이나 1글자)를 대비해 안전장치 추가 가능
+            if (keyword.length === 0) return false; 
+            
+            return nameAttr.includes(keyword) || addrAttr.includes(keyword) || shortAttr.includes(keyword);
+        });
+        
+        if (isMatch) {
             marker.setMap(map);
+            // 여러 개가 검색될 수 있으므로, 가장 처음 발견된 매칭 마커로 지도의 중심을 이동하고 정보창을 엽니다.
             if (!found) {
                 map.setCenter(marker.getPosition());
                 map.setZoom(14);
