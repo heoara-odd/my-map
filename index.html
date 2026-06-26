@@ -269,7 +269,7 @@ var map = new naver.maps.Map('map', { center: new naver.maps.LatLng(34.85, 127.7
 var markers = [];
 var infoWindows = [];
 var myLocationMarker = null;
-
+    
 function makeContactHtml(contacts) {
     return contacts.map(c => `
         <div class="contact-item">
@@ -278,12 +278,12 @@ function makeContactHtml(contacts) {
         </div>
     `).join('');
 }
-
+    
 // 정보창 일괄 닫기 함수를 전역에 할당
 window.closeAllInfo = function() {
     infoWindows.forEach(function(iw) { iw.close(); });
 };
-
+    
 // 주소 복사 함수를 전역에 할당
 window.copyAddr = function(addr) {
     navigator.clipboard.writeText(addr).then(function() {
@@ -297,7 +297,7 @@ window.copyAddr = function(addr) {
         alert("주소가 복사되었습니다: " + addr);
     });
 };
-
+    
 // 카카오내비 길안내 실행 함수를 전역에 할당
 window.startNavi = function(x, y, name) {
     var url = "kakaonavi://navigate?dname=" + encodeURIComponent(name) + "&dx=" + x + "&dy=" + y + "&coordType=WGS84";
@@ -311,7 +311,7 @@ window.startNavi = function(x, y, name) {
     }, 1500);
     window.location.href = url;
 };
-
+    
 function initMarkers() {
     businessData.forEach(function(item) {
         naver.maps.Service.geocode({ query: item.addr }, function(status, response) {
@@ -328,7 +328,7 @@ function initMarkers() {
             // 검색 필터링을 위해 마커 객체에 거래처 정보 바인딩
             marker.set('businessInfo', item);
             markers.push(marker);
-
+    
             var infowindow = new naver.maps.InfoWindow({
                 content: `
                     <div class="info-window">
@@ -339,14 +339,14 @@ function initMarkers() {
                         <div style="font-size: 12px; color: #333; background: #f0f0f0; padding: 8px; border-radius: 5px; margin-bottom: 5px; word-break: keep-all;">
                             ${item.addr}
                         </div>
-
+    
                         <div class="addr-text" onclick="window.copyAddr('${item.addr}')">📋 주소 복사</div>
                         <button class="navi-btn" onclick="window.startNavi('${res.x}', '${res.y}', '${item.name}')">카카오내비 길안내</button>
                     </div>`,
                 borderWidth: 0, backgroundColor: "transparent", disableAnchor: true, pixelOffset: new naver.maps.Point(0, -10)
             });
             infoWindows.push(infowindow);
-
+    
             naver.maps.Event.addListener(marker, "click", function() {
                 window.closeAllInfo();
                 infowindow.open(map, marker);
@@ -354,18 +354,19 @@ function initMarkers() {
         });
     });
 }
-
-// 상단 검색 기능 정의
+    
+// 상단 검색 기능 정의 (마침표 다중 검색 수정 버전)
 function searchBusiness() {
     var rawInput = document.getElementById('search-input').value.trim().toLowerCase();
     
-    // 1. 마침표(.)를 기준으로 검색어를 나누고, 각 단어의 앞뒤 공백을 제거한 뒤, 빈 단어는 제외합니다.
-    var keywords = rawInput.split('.').map(function(k) { return k.trim(); }).filter(function(k) { return k.length > 0; });
+    // 1. 마침표(.)를 기준으로 쪼개고 앞뒤 공백 제거
+    var keywords = rawInput.split('.').map(function(k) { return k.trim(); });
     
-    // 2. 유효한 검색어가 없거나, 전체 입력 글자 수가 2글자 미만인 경우 제한
-    // (예: 단일 검색어 1글자 제한 유지 및 마침표만 입력한 경우 방지)
-    if (keywords.length === 0 || rawInput.length < 2) {
-        alert('검색어는 최소 두 글자 이상 입력해 주세요.');
+    // 2. 쪼개진 단어들 중 한 글자 이하인 단어가 하나라도 있는지 체크 (빈 문자열 포함)
+    var hasShortWord = keywords.some(function(k) { return k.length < 2; });
+    
+    if (hasShortWord) {
+        alert('각 검색어는 최소 두 글자 이상 입력해 주세요.\n(예: 한일.포에)');
         return;
     }
     
@@ -378,17 +379,14 @@ function searchBusiness() {
         var addrAttr = info.addr.toLowerCase();
         var shortAttr = info.short.toLowerCase();
         
-        // 3. 입력된 여러 검색어(keywords) 중 하나라도 일치하는 게 있는지 검사 (OR 조건)
+        // 3. 입력한 여러 단어 중 하나라도 매칭되는 마커인지 판별
         var isMatch = keywords.some(function(keyword) {
-            // 개별 검색어가 너무 짧은 경우(예: 실수로 입력된 공백이나 1글자)를 대비해 안전장치 추가 가능
-            if (keyword.length === 0) return false; 
-            
             return nameAttr.includes(keyword) || addrAttr.includes(keyword) || shortAttr.includes(keyword);
         });
         
         if (isMatch) {
             marker.setMap(map);
-            // 여러 개가 검색될 수 있으므로, 가장 처음 발견된 매칭 마커로 지도의 중심을 이동하고 정보창을 엽니다.
+            // 검색된 것 중 가장 첫 번째 마커에 초점을 맞추고 정보창을 얍니다.
             if (!found) {
                 map.setCenter(marker.getPosition());
                 map.setZoom(14);
@@ -396,19 +394,19 @@ function searchBusiness() {
                 found = true;
             }
         } else {
-            marker.setMap(null); // 매칭되지 않는 마커는 숨김 처리
+            marker.setMap(null); // 일치하지 않는 마커는 숨김
         }
     });
     
     if (!found) alert('검색 결과가 없습니다.');
 }
-
+    
 // 검색창 리셋 및 닫기 이벤트 핸들러 바인딩
 document.getElementById('search-btn').addEventListener('click', searchBusiness);
 document.getElementById('search-input').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') searchBusiness();
 });
-
+    
 document.getElementById('reset-btn').addEventListener('click', function() {
     document.getElementById('search-input').value = '';
     window.closeAllInfo();
@@ -416,11 +414,11 @@ document.getElementById('reset-btn').addEventListener('click', function() {
     map.setCenter(new naver.maps.LatLng(34.85, 127.70));
     map.setZoom(11);
 });
-
+    
 document.getElementById('close-btn').addEventListener('click', function() {
     document.getElementById('search-container').style.display = 'none';
 });
-
+    
 // 내 위치 트래킹 기능 구현
 document.getElementById('mylocation-btn').addEventListener('click', function() {
     if (navigator.geolocation) {
@@ -450,7 +448,7 @@ document.getElementById('mylocation-btn').addEventListener('click', function() {
         alert('이 브라우저에서는 위치 서비스(Geolocation)를 지원하지 않습니다.');
     }
 });
-
+    
 // 마커 지도 초기화 실행
 initMarkers();
 </script>
