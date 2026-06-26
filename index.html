@@ -358,8 +358,10 @@ function initMarkers() {
 // 상단 검색 기능 정의
 function searchBusiness() {
     var keyword = document.getElementById('search-input').value.trim().toLowerCase();
-    if (!keyword) {
-        alert('검색어를 입력하세요.');
+    
+    // 변경된 부분: 검색어가 없거나 2글자 미만인 경우 제한
+    if (keyword.length < 2) {
+        alert('검색어는 최소 두 글자 이상 입력해 주세요.');
         return;
     }
     
