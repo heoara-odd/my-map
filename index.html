@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>거래처 통합 관리 지도</title>
-    <!-- 네이버 지도 v3 API 로드 (geocoder 서브모듈 포함) -->
-    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=zye1jjk3u0&submodules=geocoder"></script>
+    <!-- 네이버 지도 v3 API 로드 -->
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=zye1jjk3u0"></script>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
         #map { width: 100%; height: 100vh; position: relative; z-index: 1; }
@@ -61,6 +61,7 @@
 <div id="map"></div>
 
 <script>
+// 여수 산단 인근 거래처들의 정확한 위도(lat), 경도(lng) 직접 매핑
 var businessData = [
     { short: "한일", name: "한일기전(사무실)", contacts: [{n: "최병두 차장", p: "010-2430-6636"}], addr: "전남 여수시 흥국사길 50" },
     { short: "포에", name: "포에스엔지니어링", contacts: [{n: "임성현 과장", p: "010-2646-8277"}], addr: "전남 여수시 여수산단로 579" },
@@ -334,7 +335,7 @@ window.closeAllInfo = function() {
     infoWindows.forEach(function(iw) { iw.close(); });
 };
      
-// 네이버 지도(Naver Map) 길찾기 실행 함수
+// 네이버 지도 길찾기 실행 함수
 window.openNaverNavi = function(name, lat, lng) {
     var nmapUrl = "nmap://route/car?dlat=" + lat + "&dlng=" + lng + "&dname=" + encodeURIComponent(name) + "&appname=com.example.app";
     var webUrl = "https://map.naver.com/v5/directions/-/-/-/mode/CAR?c=" + lng + "," + lat + ",15,0,0,0,dh";
@@ -349,72 +350,49 @@ window.openNaverNavi = function(name, lat, lng) {
     window.location.href = nmapUrl;
 };
      
-// 지도가 완전히 로드된 후 Geocoding 수행 및 마커 생성
-naver.maps.onJSContentLoaded = function() {
-    initMapMarkers();
-};
-
-if (typeof naver !== 'undefined' && naver.maps && naver.maps.Service) {
-    initMapMarkers();
-} else {
-    window.addEventListener('load', function() {
-        if (typeof initMapMarkers === 'function') initMapMarkers();
+// 마커 및 정보창 생성
+businessData.forEach(function(item) {
+    var point = new naver.maps.LatLng(item.lat, item.lng);
+     
+    var marker = new naver.maps.Marker({
+        position: point,
+        map: map,
+        title: item.name,
+        icon: {
+            content: `<div class="custom-marker">${item.short}</div>`,
+            anchor: new naver.maps.Point(15, 15)
+        }
     });
-}
-
-function initMapMarkers() {
-    businessData.forEach(function(item) {
-        naver.maps.Service.geocode({ query: item.addr }, function(status, response) {
-            if (status !== naver.maps.Service.Status.OK || !response.v2 || response.v2.addresses.length === 0) {
-                return;
-            }
      
-            var result = response.v2.addresses[0];
-            var point = new naver.maps.LatLng(result.y, result.x);
+    var contentString = `
+        <div class="info-window">
+            <span class="close-window-btn" onclick="closeAllInfo()">&times;</span>
+            <div class="info-title">${item.name}</div>
+            <div class="contact-list">${makeContactHtml(item.contacts)}</div>
+            <span class="addr-text" onclick="openNaverNavi('${item.name}', ${item.lat}, ${item.lng})">🧭 ${item.addr}</span>
+            <button class="navi-btn" onclick="openNaverNavi('${item.name}', ${item.lat}, ${item.lng})">🧭 네이버 지도 길안내</button>
+        </div>
+    `;
      
-            // 마커 생성
-            var marker = new naver.maps.Marker({
-                position: point,
-                map: map,
-                title: item.name,
-                icon: {
-                    content: `<div class="custom-marker">${item.short}</div>`,
-                    anchor: new naver.maps.Point(15, 15)
-                }
-            });
-     
-            var contentString = `
-                <div class="info-window">
-                    <span class="close-window-btn" onclick="closeAllInfo()">&times;</span>
-                    <div class="info-title">${item.name}</div>
-                    <div class="contact-list">${makeContactHtml(item.contacts)}</div>
-                    <span class="addr-text" onclick="openNaverNavi('${item.name}', ${result.y}, ${result.x})">🧭 ${item.addr}</span>
-                    <button class="navi-btn" onclick="openNaverNavi('${item.name}', ${result.y}, ${result.x})">🧭 네이버 지도 길안내</button>
-                </div>
-            `;
-     
-            var infoWindow = new naver.maps.InfoWindow({
-                content: contentString,
-                backgroundColor: "transparent",
-                borderWidth: 0,
-                disableAnchor: true
-            });
-     
-            marker.itemData = item;
-            marker.infoWindow = infoWindow;
-     
-            markers.push(marker);
-            infoWindows.push(infoWindow);
-     
-            // 마커 클릭 시 상세 정보창 표시
-            naver.maps.Event.addListener(marker, 'click', function() {
-                closeAllInfo();
-                infoWindow.open(map, marker);
-                map.panTo(point);
-            });
-        });
+    var infoWindow = new naver.maps.InfoWindow({
+        content: contentString,
+        backgroundColor: "transparent",
+        borderWidth: 0,
+        disableAnchor: true
     });
-}
+     
+    marker.itemData = item;
+    marker.infoWindow = infoWindow;
+     
+    markers.push(marker);
+    infoWindows.push(infoWindow);
+     
+    naver.maps.Event.addListener(marker, 'click', function() {
+        closeAllInfo();
+        infoWindow.open(map, marker);
+        map.panTo(point);
+    });
+});
      
 // 검색 함수
 function performSearch() {
