@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>거래처 통합 관리 지도</title>
-    <!-- 네이버 지도 v3 API 로드 -->
-    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=zye1jjk3u0"></script>
+    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=zye1jjk3u0&submodules=geocoder"></script>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; }
         #map { width: 100%; height: 100vh; position: relative; z-index: 1; }
@@ -61,7 +60,6 @@
 <div id="map"></div>
 
 <script>
-// 여수 산단 인근 거래처들의 정확한 위도(lat), 경도(lng) 직접 매핑
 var businessData = [
     { short: "한일", name: "한일기전(사무실)", contacts: [{n: "최병두 차장", p: "010-2430-6636"}], addr: "전남 여수시 흥국사길 50" },
     { short: "포에", name: "포에스엔지니어링", contacts: [{n: "임성현 과장", p: "010-2646-8277"}], addr: "전남 여수시 여수산단로 579" },
@@ -82,14 +80,13 @@ var businessData = [
     { short: "대양(이일산업)", name: "대양전기", contacts: [{n: "최준호 차장", p: "010-8494-3309"}, {n: "사무실", p: "061-651-7779"}], addr: "전남 여수시 삼동로 27-9" },
     { short: "엠케", name: "엠케이전력", contacts: [{n: "박신호 부장", p: "010-3904-7912"}, {n: "김상대 과장", p: "010-8602-2179"}], addr: "전남 여수시 화산로 122" },
     { short: "화성", name: "화성전력", contacts: [{n: "장완 대표", p: "010-3643-2691"}, {n: "장준수 과장", p: "010-9403-2691"}], addr: "전남 여수시 미평로 33-2" },
-    { short: "금성", name: "금성소방", contacts: [{n: "사무실", p: "061-682-5028"}], addr: "전남 여수시 신기북4길 16" },
+    { short: "금성", name: "금성소방", contacts: [{n: "손지민 대리", p: "010-4558-0978"}], addr: "전남 여수시 신기북4길 16" },
     { short: "대성", name: "대성소방", contacts: [{n: "사무실", p: "061-683-4417"}], addr: "전남 여수시 신기북2길 15" },
     { short: "마루", name: "마루소방", contacts: [{n: "홍경범 대표", p: "010-2972-4633"}], addr: "전남 여수시 미평남2길 2" },
     { short: "세진", name: "세진계전", contacts: [{n: "장동기 이사", p: "010-5690-5904"}, {n: "임채근 소장", p: "010-8505-8085"}], addr: "전남 여수시 성산6길 27-4" },
     { short: "세진(엠투엔)", name: "세진계전", contacts: [{n: "임채근 소장", p: "010-8505-8085"}, {n: "장동기 이사", p: "010-5690-5904"}], addr: "전남 여수시 산단로 802" },
     { short: "아진", name: "아진전력", contacts: [{n: "장찬명 과장", p: "010-8616-6784"}], addr: "전남 여수시 여수산단로 282" },
-    { short: "아진(NCC 2공장)", name: "아진전력", contacts: [{n: "최경선 소장", p: "010-8139-0709"}, {n: "오재관 이사", p: "010-8221-3015"}, {n: "장찬명 과장", p: "010-8616-6784"}], addr: "전남 여수시 여수산단2로 46-20" },
-    { short: "아진(NCC 3공장)", name: "아진전력", contacts: [{n: "주주호 부장", p: "010-2628-1045"}, {n: "오재관 이사", p: "010-8221-3015"}, {n: "장찬명 과장", p: "010-8616-6784"}], addr: "전남 여수시 여수산단2로 220-10" },
+    { short: "아진(NCC2)", name: "아진전력", contacts: [{n: "최경선 소장", p: "010-8139-0709"}, {n: "장찬명 과장", p: "010-8616-6784"}], addr: "전남 여수시 여수산단2로 46-20" },
     { short: "일광", name: "일광전기", contacts: [{n: "장재호 소장", p: "010-3645-4512"}, {n: "이성자 대표", p: "010-7355-4408"}], addr: "전남 여수시 소라면 조산로 288" },
     { short: "태광", name: "태광계전", contacts: [{n: "정광호 부장", p: "010-7581-5337"}], addr: "전남 여수시 덕양삼거리길 25" },
     { short: "엑스", name: "엑스포전력", contacts: [{n: "박원준 이사", p: "010-8556-5587"}], addr: "전남 여수시 주삼덕양로 68" },
@@ -160,10 +157,8 @@ var businessData = [
     { short: "이성", name: "이성정보통신", contacts: [{n: "대표", p: "010-8507-3941"}], addr: "경남 의령군 의령읍 벽화로8길 16" },
     { short: "현대", name: "현대전기공사", contacts: [{n: "대표", p: "010-3862-6787"}], addr: "경남 의령군 의령읍 의병로 19길 5-1" },
     { short: "우리", name: "우리이엔씨", contacts: [{n: "최진혁 이사", p: "010-9995-6568"}, {n: "김태준 대리", p: "010-9427-6013"}], addr: "전남 광양시 서평9길 20" },
-    { short: "청우", name: "청우전기", contacts: [{n: "김선태 소장", p: "010-7616-8795"}, {n: "한세선 대표", p: "010-4582-7256"}, {n: "서용민 소장", p: "010-2996-0529"}], addr: "전남 광양시 제철로 997-28" },
+    { short: "청우", name: "청우전기", contacts: [{n: "김선태 소장", p: "010-7616-8795"}, {n: "서용민 소장", p: "010-2996-0529"}, {n: "직원", p: "010-4582-7256"}], addr: "전남 광양시 제철로 997-28" },
     { short: "청우(구봉산)", name: "청우전기", contacts: [{n: "김선태 소장", p: "010-7616-8795"}, {n: "서용민 소장", p: "010-2996-0529"}], addr: "전남 광양시 구봉산전망대길 155" },
-    { short: "청우(복지관)", name: "청우전기", contacts: [{n: "이두환 팀장", p: "010-5474-0803"}, {n: "김일훈 소장", p: "010-9212-3355"}, {n: "김선태 소장", p: "010-7616-8795"}], addr: "전남 순천시 서면 선평길 28" },
-    { short: "청우(하수처리장)", name: "청우전기", contacts: [{n: "김일훈 소장", p: "010-9212-3355"}, {n: "김선태 소장", p: "010-7616-8795"}], addr: "전남 광양시 소미1로 48-21" },
     { short: "해창", name: "해창이엔씨", contacts: [{n: "양경용 팀장", p: "010-3606-8583"}], addr: "전남 광양시 길호5길 9" },
     { short: "딘스", name: "딘스텔엔지니어링", contacts: [{n: "강기표 과장", p: "010-8147-4133"}, {n: "김진태 이사", p: "010-8616-4777"}], addr: "전남 광양시 중동 308-114" },
     { short: "대일", name: "대일소방", contacts: [{n: "사무실", p: "061-793-1198"}], addr: "전남 광양시 눈소5길 55-5" },
@@ -205,7 +200,7 @@ var businessData = [
     { short: "청원(본사)", name: "청원전기", contacts: [{n: "서인재 대표", p: "010-4620-1428"}], addr: "전남 순천시 상사면 오실길 43" },
     { short: "청원(성황동)", name: "청원전기", contacts: [{n: "서인재 대표", p: "010-4620-1428"}], addr: "전남 광양시 성황동 1904" },
     { short: "중앙", name: "중앙방재", contacts: [{n: "서인영 대표", p: "010-9866-9713"}, {n: "경리", p: "010-2971-9061"}], addr: "전남 순천시 고지5길 14-6" },
-    { short: "중앙(황길동)", name: "중앙방재", contacts: [{n: "박상국", p: "010-4041-9879"}, {n: "서인영 대표", p: "010-9866-9713"}, {n: "경리", p: "010-2971-9061"}], addr: "전남 광양시 항만6로 77" },
+    { short: "중앙(황길동)", name: "중앙방재", contacts: [{n: "박상국", p: "010-4041-9879"}, {n: "서인영 대표", p: "010-9866-9713"}, {n: "경리", p: "010-2971-9061"}], addr: "전남 광양시 황길동 65-11" },
     { short: "일신", name: "일신테크", contacts: [{n: "권정수 대표", p: "010-7610-3996"}], addr: "전남 순천시 서면 청소길 93" },
     { short: "강주", name: "강주", contacts: [{n: "김사영 이사", p: "010-6345-3543"}], addr: "전남 순천시 백강로 486" },
     { short: "국제", name: "국제이앤씨", contacts: [{n: "박광원 차장", p: "010-3180-7321"}, {n: "오병록 대리", p: "010-4166-1639"}, {n: "김승완", p: "010-8693-4678"}, {n: "사무실", p: "061-753-1401"}], addr: "전남 순천시 지본금평길 18" },
@@ -223,10 +218,8 @@ var businessData = [
     { short: "광진", name: "광진케이블", contacts: [{n: "정보없음", p: ""}], addr: "부산시 남구 신선로 259-16" },
     { short: "씨엠(해남)", name: "씨엠파워", contacts: [{n: "담당자", p: "010-3634-4069"}, {n: "이슬희 과장", p: "010-3009-2146"}], addr: "전남 해남군 해남읍 중앙2로 100-1" },
     { short: "한화", name: "한화에어로스페이스", contacts: [{n: "임채근 소장", p: "010-8505-8085"}], addr: "전남 여수시 신월로 413" },
-    { short: "세진(한화)", name: "세진계전", contacts: [{n: "임채근 소장", p: "010-8505-8085"}], addr: "전남 여수시 신월로 413" },
     { short: "대호", name: "대호전기공사", contacts: [{n: "대표", p: "010-4545-5117"}], addr: "경남 사천시 서향안길 75" },
-    { short: "대호(남동발전소)", name: "대호전기공사", contacts: [{n: "대표", p: "010-4545-5117"}], addr: "경남 고성군 하이면 하이로 1" },
-    { short: "대호(고성발전소)", name: "대호전기공사", contacts: [{n: "김주석 소장", p: "010-5225-0699}, {n: "담당자", p: "010-7277-3430, {n: "대표", p: "010-4545-5117"}], addr: "경남 고성군 하이면 하이로 30" },
+    { short: "대호(남동발전소)", name: "대호전기공사", contacts: [{n: "대표", p: "010-4545-5117"}], addr: "경남 고성군 하이로 1" },
     { short: "한려(여수중)", name: "한려이엔지", contacts: [{n: "박문수 대표", p: "010-6652-0115"}], addr: "전남 여수시 공화북4길 19-1" },
     { short: "대방", name: "대방지", contacts: [{n: "박장진", p: ""}], addr: "경남 의령군 정곡면 법정로5길 67-2" },
     { short: "동부", name: "동부이엔씨", contacts: [{n: "임병선 소장", p: "010-8601-8057"}, {n: "남영미 이사", p: "010-3074-4720"}], addr: "전남 광양시 광양읍 예구6길 21" },
@@ -273,11 +266,10 @@ var businessData = [
     { short: "메가", name: "메가전력", contacts: [{n: "강효원 소장", p: "010-6648-7184"}, {n: "사무실", p: "061-727-0366"}], addr: "전남 순천시 북정2길 5" },
     { short: "메가(옥과현장)", name: "메가전력", contacts: [{n: "강효원 소장", p: "010-6648-7184"}, {n: "사무실", p: "061-727-0366"}], addr: "전남 곡성군 옥과면 미술관로 288" },
     { short: "세아", name: "세아앰앤에스", contacts: [{n: "오재관 이사", p: "010-8221-3015"}], addr: "전남 여수시 산단중앙로 188" },
-    { short: "무한(세아)", name: "무한이앤지", contacts: [{n: "쵀재영 소장", p: "010-6606-9275"}, {n: "오재관 이사", p: "010-8221-3015"}], addr: "전남 여수시 산단중앙로 188" },
     { short: "지이", name: "지이에스이앤지", contacts: [{n: "윤용한 과장", p: "010-9311-2116"}], addr: "전남 광양시 눈소2길 77" },
     { short: "선도", name: "선도", contacts: [{n: "박찬희 과장", p: "010-7663-2527"}, {n: "황두하 대표", p: "010-3912-9999"}], addr: "전남 순천시 청소길 127" },
     { short: "선도(돌산현장)", name: "선도", contacts: [{n: "박찬희 과장", p: "010-7663-2527"}, {n: "황두하 대표", p: "010-3912-9999"}], addr: "전남 여수시 돌산읍 우두리 1117-8" },
-    { short: "제이", name: "제이제이코리아", contacts: [{n: "이찬 차장", p: "010-5597-6113"}, {n: "이진화 공무부장", p: "010-4155-8100"}], addr: "전남 순천시 해룡면 율촌로 227-3" },
+    { short: "제이", name: "제이제이코리아", contacts: [{n: "이찬 차장", p: "010-5597-6113"}], addr: "전남 순천시 해룡면 율촌로 227-3" },
     { short: "제이(율촌)", name: "제이제이코리아", contacts: [{n: "이찬 차장", p: "010-5597-6113"}], addr: "전남 여수시 율촌면 여동리 372-2" },
     { short: "충전", name: "우암동행정복지센터", contacts: [{n: "전기차 충전소", p: ""}], addr: "부산시 남구 동제당로 368" },
     { short: "하영(진주)", name: "하영기업", contacts: [{n: "최병철 전무", p: "010-3807-4360"}], addr: "경남 진주시 진성면 동부로 1548번길 10" },
@@ -309,18 +301,13 @@ var businessData = [
     { short: "광원(포스코1문)", name: "광원테크", contacts: [{n: " 노범식 소장", p: "010-6789-1195"}], addr: "전남 광양시 제철로 1704" },
     { short: "광원", name: "광원테크", contacts: [{n: " 노범식 소장", p: "010-6789-1195"}], addr: "전남 광양시 다압면 항동3길 14" },
     { short: "화성", name: "화성전력", contacts: [{n: " 사무실", p: "061-742-3023"}], addr: "전남 순천시 남산4길 23" },
-    { short: "에프(cek)", name: "에프에이엔지니어링", contacts: [{n: " 이은덕 상무", p: "010-3710-7046"}], addr: "전남 여수시 월내동 1402" },
-    { short: "기성", name: "기성이엔지", contacts: [{n: " 담당자", p: "010-3135-9377"}, {n: " 오원근 대표", p: "010-6337-8243"}, {n: " 김철식 부장", p: "010-9440-2466"}], addr: "전남 광양시 옥곡면 신금로 50" },
-    { short: "엠제", name: "엠제이전기", contacts: [{n: " 이명수 대표", p: "010-3065-8558"}], addr: "전남 순천시 해룡면 율촌산단1로 50" },
-    { short: "썬텍(우정)", name: "우정이앤지", contacts: [{n: " 사무실", p: "070-7758-8777"}], addr: "전남 순천시 해룡면 정채봉길 121" },
-    { short: "수인", name: "수인정보", contacts: [{n: " 대표님", p: "010-3589-4400"}], addr: "경남 진주시 옥봉길 41" },
 ];
-     
+
 var map = new naver.maps.Map('map', { center: new naver.maps.LatLng(34.85, 127.70), zoom: 11 });
 var markers = [];
 var infoWindows = [];
 var myLocationMarker = null;
-     
+
 function makeContactHtml(contacts) {
     return contacts.map(c => `
         <div class="contact-item">
@@ -329,13 +316,13 @@ function makeContactHtml(contacts) {
         </div>
     `).join('');
 }
-     
+
 // 정보창 일괄 닫기
 window.closeAllInfo = function() {
     infoWindows.forEach(function(iw) { iw.close(); });
 };
-     
-// 네이버 지도 길찾기 실행 함수
+
+// 네이버 지도(Naver Map) 길찾기 실행 함수 (주소 클릭 및 길안내 버튼 연동)
 window.openNaverNavi = function(name, lat, lng) {
     var nmapUrl = "nmap://route/car?dlat=" + lat + "&dlng=" + lng + "&dname=" + encodeURIComponent(name) + "&appname=com.example.app";
     var webUrl = "https://map.naver.com/v5/directions/-/-/-/mode/CAR?c=" + lng + "," + lat + ",15,0,0,0,dh";
@@ -349,113 +336,128 @@ window.openNaverNavi = function(name, lat, lng) {
     
     window.location.href = nmapUrl;
 };
-     
-// 마커 및 정보창 생성
+
+// 데이터로 마커 및 정보창 생성 (Geocoding)
 businessData.forEach(function(item) {
-    var point = new naver.maps.LatLng(item.lat, item.lng);
-     
-    var marker = new naver.maps.Marker({
-        position: point,
-        map: map,
-        title: item.name,
-        icon: {
-            content: `<div class="custom-marker">${item.short}</div>`,
-            anchor: new naver.maps.Point(15, 15)
+    naver.maps.Service.geocode({ query: item.addr }, function(status, response) {
+        if (status !== naver.maps.Service.Status.OK || response.v2.addresses.length === 0) {
+            return;
         }
-    });
-     
-    var contentString = `
-        <div class="info-window">
-            <span class="close-window-btn" onclick="closeAllInfo()">&times;</span>
-            <div class="info-title">${item.name}</div>
-            <div class="contact-list">${makeContactHtml(item.contacts)}</div>
-            <span class="addr-text" onclick="openNaverNavi('${item.name}', ${item.lat}, ${item.lng})">🧭 ${item.addr}</span>
-            <button class="navi-btn" onclick="openNaverNavi('${item.name}', ${item.lat}, ${item.lng})">🧭 네이버 지도 길안내</button>
-        </div>
-    `;
-     
-    var infoWindow = new naver.maps.InfoWindow({
-        content: contentString,
-        backgroundColor: "transparent",
-        borderWidth: 0,
-        disableAnchor: true
-    });
-     
-    marker.itemData = item;
-    marker.infoWindow = infoWindow;
-     
-    markers.push(marker);
-    infoWindows.push(infoWindow);
-     
-    naver.maps.Event.addListener(marker, 'click', function() {
-        closeAllInfo();
-        infoWindow.open(map, marker);
-        map.panTo(point);
+
+        var result = response.v2.addresses[0];
+        var point = new naver.maps.LatLng(result.y, result.x);
+
+        // 마커 생성
+        var marker = new naver.maps.Marker({
+            position: point,
+            map: map,
+            title: item.name,
+            icon: {
+                content: `<div class="custom-marker">${item.short}</div>`,
+                anchor: new naver.maps.Point(15, 15)
+            }
+        });
+
+        // [요청3 반영] 주소 영역 클릭 시 네이버 지도 길안내(openNaverNavi)로 연동
+        var contentString = `
+            <div class="info-window">
+                <span class="close-window-btn" onclick="closeAllInfo()">&times;</span>
+                <div class="info-title">${item.name}</div>
+                <div class="contact-list">${makeContactHtml(item.contacts)}</div>
+                <span class="addr-text" onclick="openNaverNavi('${item.name}', ${result.y}, ${result.x})">🧭 ${item.addr}</span>
+                <button class="navi-btn" onclick="openNaverNavi('${item.name}', ${result.y}, ${result.x})">🧭 네이버 지도 길안내</button>
+            </div>
+        `;
+
+        var infoWindow = new naver.maps.InfoWindow({
+            content: contentString,
+            backgroundColor: "transparent",
+            borderWidth: 0,
+            disableAnchor: true
+        });
+
+        marker.itemData = item;
+        marker.infoWindow = infoWindow;
+
+        markers.push(marker);
+        infoWindows.push(infoWindow);
+
+        // [요청2 반영] 마커를 직접 클릭할 때만 상세 정보창 표시
+        naver.maps.Event.addListener(marker, 'click', function() {
+            closeAllInfo();
+            infoWindow.open(map, marker);
+            map.panTo(point);
+        });
     });
 });
-     
-// 검색 함수
+
+// [요청1 & 요청4 반영] 마침표('.') 구분 다중 검색 + 업체명/축약어 앞 2글자 일치 검색
 function performSearch() {
     var rawInput = document.getElementById('search-input').value.trim();
     if (!rawInput) {
         alert("검색어를 입력해주세요.");
         return;
     }
-     
+
+    // 1. 마침표('.') 기준으로 검색어를 나눔
     var queries = rawInput
         .split('.')
         .map(function(q) { return q.trim(); })
         .filter(function(q) { return q.length > 0; });
-     
+
     if (queries.length === 0) {
         alert("검색어를 입력해주세요.");
         return;
     }
-     
+
+    // 각 검색어의 앞 2글자(소문자) 추출
     var prefixes = queries.map(function(q) {
         return q.substring(0, 2).toLowerCase();
     });
-     
-    closeAllInfo();
-     
+
+    closeAllInfo(); // 검색 시 기본적으로 정보창은 모두 닫음
+
     var matchedCount = 0;
     var bounds = new naver.maps.LatLngBounds();
-     
+
     markers.forEach(function(marker) {
         var data = marker.itemData;
         var namePrefix = data.name.substring(0, 2).toLowerCase();
         var shortPrefix = data.short.substring(0, 2).toLowerCase();
-     
+
+        // 입력된 키워드들의 앞 2글자 중 하나라도 업체명/축약어의 앞 2글자와 일치하는지 확인
         var isMatch = prefixes.some(function(prefix) {
             return (namePrefix === prefix) || (shortPrefix === prefix);
         });
-     
+
         if (isMatch) {
             marker.setMap(map);
             bounds.extend(marker.getPosition());
             matchedCount++;
         } else {
-            marker.setMap(null);
+            marker.setMap(null); // 조건에 안 맞는 마커 숨김
         }
     });
-     
+
     if (matchedCount > 0) {
         if (matchedCount === 1) {
+            // 결과가 1개일 때는 해당 위치 중심 이동 및 확대 (정보창은 띄우지 않음)
             map.setCenter(bounds.getCenter());
             map.setZoom(14);
         } else {
+            // 다중 결과일 때는 모든 마커가 보이는 영역으로 지도 범위 맞춤
             map.panToBounds(bounds);
         }
     } else {
         alert("일치하는 업체를 찾을 수 없습니다.");
     }
 }
-     
+
 document.getElementById('search-btn').addEventListener('click', performSearch);
 document.getElementById('search-input').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') performSearch();
 });
-     
+
 // 전체(초기화) 버튼 이벤트
 document.getElementById('reset-btn').addEventListener('click', function() {
     document.getElementById('search-input').value = '';
@@ -466,12 +468,12 @@ document.getElementById('reset-btn').addEventListener('click', function() {
     map.setCenter(new naver.maps.LatLng(34.85, 127.70));
     map.setZoom(11);
 });
-     
+
 // 닫기 버튼 이벤트
 document.getElementById('close-btn').addEventListener('click', function() {
     closeAllInfo();
 });
-     
+
 // 내 위치 버튼 클릭 이벤트
 document.getElementById('mylocation-btn').addEventListener('click', function() {
     if (navigator.geolocation) {
@@ -479,7 +481,7 @@ document.getElementById('mylocation-btn').addEventListener('click', function() {
             var lat = position.coords.latitude;
             var lng = position.coords.longitude;
             var myPos = new naver.maps.LatLng(lat, lng);
-     
+
             if (myLocationMarker) {
                 myLocationMarker.setPosition(myPos);
             } else {
@@ -502,6 +504,6 @@ document.getElementById('mylocation-btn').addEventListener('click', function() {
     }
 });
 </script>
-     
+
 </body>
 </html>
